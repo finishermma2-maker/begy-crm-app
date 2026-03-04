@@ -1317,13 +1317,13 @@
                 <div class="fin-label">Средний чек</div>
                 <div class="fin-val" id="finAvg">0 ₽</div>
             </div>
-            <div class="finance-card" style="background:rgba(255,59,48,0.08); border:1px solid rgba(255,59,48,0.2);">
-                <div class="fin-label" style="color:#ff3b30;">Расходы за месяц</div>
-                <div class="fin-val" style="color:#ff3b30;" id="finExpenses">0 ₽</div>
+            <div class="finance-card">
+                <div class="fin-label">💸 Расходы за месяц</div>
+                <div class="fin-val" style="color:var(--text-primary);" id="finExpenses">0 ₽</div>
             </div>
-            <div class="finance-card" style="background:rgba(52,199,89,0.08); border:1px solid rgba(52,199,89,0.2);">
-                <div class="fin-label" style="color:#34c759;">Чистая прибыль</div>
-                <div class="fin-val" style="color:#34c759;" id="finProfit">0 ₽</div>
+            <div class="finance-card">
+                <div class="fin-label">✨ Чистая прибыль</div>
+                <div class="fin-val" id="finProfit">0 ₽</div>
             </div>
         </div>
 
@@ -1489,7 +1489,20 @@
             if (v === 'clients') renderClientsList();
             if (v === 'finance') renderFinanceStats();
             if (v === 'calendar') { calSelected = todayStr; calM = todayDate.getMonth(); calY = todayDate.getFullYear(); renderMonthCalendar(); }
-            if (v === 'add') { resetAddForm(); document.getElementById('appDate').value = todayStr; generateTimeSlots(); }
+            if (v === 'add') {
+                resetAddForm();
+                // Если сегодня поздно и слотов нет — ставим завтра
+                const now = new Date();
+                const minsNow = now.getHours() * 60 + now.getMinutes();
+                const hasSlots = minsNow < 23 * 60; // есть слоты сегодня
+                if (!hasSlots) {
+                    const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+                    document.getElementById('appDate').value = formatDate(tomorrow);
+                } else {
+                    document.getElementById('appDate').value = todayStr;
+                }
+                generateTimeSlots();
+            }
         }
 
         let alarmPlayedFor = null;
@@ -1741,33 +1754,16 @@
         function toggleDayOffUI() {
             const isDayOff = document.getElementById('isDayOff').checked;
             const reg = document.getElementById('regularFields');
-            const container = document.getElementById('isDayOff').closest('.input-group');
+            const row = document.getElementById('dayOffRow');
             if (reg) reg.style.display = isDayOff ? 'none' : 'block';
             if (!isDayOff) generateTimeSlots();
-            // Визуальная обратная связь на чекбоксе
-            if (container) {
+            if (row) {
                 if (isDayOff) {
-                    container.style.background = 'rgba(52,199,89,0.18)';
-                    container.style.border = '2px solid rgba(52,199,89,0.5)';
-                    container.style.borderRadius = '14px';
-                    const label = container.querySelector('label');
-                    if (label) label.style.color = '#1d1d1f';
-                    // Добавяем текст подтверждения
-                    let badge = document.getElementById('dayOffBadge');
-                    if (!badge) {
-                        badge = document.createElement('div');
-                        badge.id = 'dayOffBadge';
-                        badge.style.cssText = 'margin-top:10px; text-align:center; background:rgba(52,199,89,0.15); padding:12px; border-radius:12px; font-weight:700; font-size:14px; color:#27ae60;';
-                        badge.innerHTML = '✅ Выходной день отмечен! Остальные поля скрыты.';
-                        const addBlock = document.getElementById('regularFields');
-                        if (addBlock) addBlock.parentNode.insertBefore(badge, addBlock);
-                    }
-                    badge.style.display = 'block';
+                    row.style.background = 'rgba(52,199,89,0.2)';
+                    row.style.border = '2px solid rgba(52,199,89,0.6)';
                 } else {
-                    container.style.background = '';
-                    container.style.border = '';
-                    const badge = document.getElementById('dayOffBadge');
-                    if (badge) badge.style.display = 'none';
+                    row.style.background = '';
+                    row.style.border = '';
                 }
             }
         }
