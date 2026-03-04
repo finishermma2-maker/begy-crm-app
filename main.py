@@ -22,7 +22,7 @@ from database import Base, Master, Client, Appointment
 
 # === КОНФИГУРАЦИЯ ===
 TOKEN = "8624226286:AAECzu8_BTLj2IcZbP8isJDwH8koF9P9Vt0"
-APP_URL = "https://finishermma2-maker.github.io/my-bot-app/"
+APP_URL = "https://precious-stroopwafel-138809.netlify.app/"
 
 # === БАЗА ДАННЫХ (SQLite) ===
 
