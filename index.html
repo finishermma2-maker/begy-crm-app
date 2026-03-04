@@ -1075,7 +1075,7 @@
                 <h1 id="greetingName">Главная</h1>
                 <p id="currentDateDisplay"></p>
             </div>
-            <div class="avatar">✂️</div>
+            <div class="avatar" id="userAvatar">✂️</div>
         </div>
 
         <div class="main-container">
@@ -1150,7 +1150,12 @@
         <div class="input-group"><label>Дата</label><input type="date" id="appDate" onchange="generateTimeSlots()">
         </div>
         <div id="regularFields">
-            <div class="input-group"><label>Время</label><select id="appTime"></select></div>
+            <div class="input-group"><label>Время</label>
+                <div style="position:relative;"><select id="appTime"
+                        style="width:100%; padding:14px 40px 14px 16px; border:1px solid var(--glass-border); border-radius:var(--radius-md); background:rgba(255,255,255,0.9); color:#1d1d1f; font-size:16px; font-family:inherit; -webkit-appearance:none; appearance:none; outline:none; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></select><span
+                        style="position:absolute; right:14px; top:50%; transform:translateY(-50%); pointer-events:none; font-size:14px; color:#6C5CE7;">▼</span>
+                </div>
+            </div>
             <div class="input-group"><label>Имя клиента</label><input type="text" id="clientName"
                     placeholder="Напр. Марина"></div>
             <div class="input-group"><label>Телефон</label><input type="tel" id="clientPhone"
@@ -1363,8 +1368,23 @@
         try {
             tg.ready(); tg.expand(); tg.setHeaderColor('#6C5CE7');
             if (tg.initDataUnsafe?.user) {
-                document.getElementById('greetingName').innerText = "Привет, " + tg.initDataUnsafe.user.first_name + "!";
-                masterTgId = tg.initDataUnsafe.user.id.toString();
+                const user = tg.initDataUnsafe.user;
+                document.getElementById('greetingName').innerText = "Привет, " + user.first_name + "!";
+                masterTgId = user.id.toString();
+                // Загружаем аватар из Telegram
+                const avatarEl = document.getElementById('userAvatar');
+                if (user.photo_url) {
+                    avatarEl.style.backgroundImage = `url(${user.photo_url})`;
+                    avatarEl.style.backgroundSize = 'cover';
+                    avatarEl.style.backgroundPosition = 'center';
+                    avatarEl.innerHTML = '';
+                } else {
+                    // Инициалы если нет фото
+                    avatarEl.innerHTML = user.first_name ? user.first_name[0].toUpperCase() : '✂️';
+                    avatarEl.style.fontSize = '20px';
+                    avatarEl.style.fontWeight = '700';
+                    avatarEl.style.color = '#fff';
+                }
             }
         } catch (e) { console.log("Web mode"); }
 
