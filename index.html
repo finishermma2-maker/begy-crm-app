@@ -1237,7 +1237,8 @@
                     <div id="timeDropdownDisplay"
                         onclick="document.getElementById('timeDropdownList').style.display = document.getElementById('timeDropdownList').style.display === 'none' ? 'block' : 'none'"
                         style="padding:14px 16px; border:2px solid rgba(108,92,231,0.3); border-radius:14px; background:#ffffff; color:#1d1d1f; font-size:16px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-                        <span>Выберите время</span><span style="font-size:12px; color:#6c5ce7;">▼</span></div>
+                        <span>Выберите время</span><span style="font-size:12px; color:#6c5ce7;">▼</span>
+                    </div>
                     <div id="timeDropdownList"
                         style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:2px solid rgba(108,92,231,0.3); border-radius:14px; margin-top:4px; max-height:200px; overflow-y:auto; z-index:100; box-shadow:0 10px 20px rgba(0,0,0,0.15);">
                     </div>
@@ -1698,16 +1699,16 @@
         function renderMonthCalendar() {
             const titleEl = document.getElementById('calMonthYear');
             if (!titleEl) return;
-            titleEl.innerText = `${monthNamesNom[calM]} ${calY} `;
+            titleEl.innerText = `${monthNamesNom[calM]} ${calY}`;
             let grid = document.getElementById('calDaysGrid'), first = new Date(calY, calM, 1).getDay();
-            grid.innerHTML = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(d => `< div style = "text-align:center; font-size:11px; color:gray" > ${d}</div > `).join('');
+            grid.innerHTML = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(d => `<div style="text-align:center; font-size:11px; color:gray">${d}</div>`).join('');
             first = (first === 0 ? 6 : first - 1);
             for (let i = 0; i < first; i++) grid.innerHTML += '<div></div>';
             for (let d = 1; d <= new Date(calY, calM + 1, 0).getDate(); d++) {
-                let ds = `${calY} -${String(calM + 1).padStart(2, '0')} -${String(d).padStart(2, '0')} `;
+                let ds = `${calY}-${String(calM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 let h = db[ds] && db[ds].length > 0;
                 let off = h && db[ds][0].isDayOff;
-                grid.innerHTML += `< div onclick = "calSelected='${ds}'; renderMonthCalendar()" class="day-cell ${ds === todayStr ? 'today' : ''} ${ds === calSelected ? 'selected' : ''} ${h ? (off ? 'is-off' : 'has-apps') : ''}" style = "width:30px; height:30px; margin:auto" > ${d}</div > `;
+                grid.innerHTML += `<div onclick="calSelected='${ds}'; renderMonthCalendar()" class="day-cell ${ds === todayStr ? 'today' : ''} ${ds === calSelected ? 'selected' : ''} ${h ? (off ? 'is-off' : 'has-apps') : ''}" style="width:30px; height:30px; margin:auto">${d}</div>`;
             }
             const labelEl = document.getElementById('selectedDayLabel');
             if (labelEl) labelEl.innerText = "Планы на " + calSelected;
