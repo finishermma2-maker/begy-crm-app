@@ -1150,11 +1150,10 @@
         <div class="input-group"><label>Дата</label><input type="date" id="appDate" onchange="generateTimeSlots()">
         </div>
         <div id="regularFields">
-            <div class="input-group"><label>Время</label>
-                <div style="position:relative;"><select id="appTime"
-                        style="width:100%; padding:14px 40px 14px 16px; border:1px solid var(--glass-border); border-radius:var(--radius-md); background:rgba(255,255,255,0.9); color:#1d1d1f; font-size:16px; font-family:inherit; -webkit-appearance:none; appearance:none; outline:none; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></select><span
-                        style="position:absolute; right:14px; top:50%; transform:translateY(-50%); pointer-events:none; font-size:14px; color:#6C5CE7;">▼</span>
-                </div>
+            <div class="input-group">
+                <label>Время</label>
+                <select id="appTime"
+                    style="width:100%; padding:14px 16px; border:2px solid rgba(108,92,231,0.3); border-radius:14px; background:#ffffff; color:#1d1d1f; font-size:16px; font-family:inherit; font-weight:600; outline:none; -webkit-appearance:none; appearance:none; cursor:pointer;"></select>
             </div>
             <div class="input-group"><label>Имя клиента</label><input type="text" id="clientName"
                     placeholder="Напр. Марина"></div>
@@ -1377,11 +1376,14 @@
                     avatarEl.style.backgroundImage = `url(${user.photo_url})`;
                     avatarEl.style.backgroundSize = 'cover';
                     avatarEl.style.backgroundPosition = 'center';
+                    avatarEl.style.overflow = 'hidden';
+                    avatarEl.style.borderRadius = '50%';
+                    avatarEl.style.flexShrink = '0';
                     avatarEl.innerHTML = '';
                 } else {
-                    // Инициалы если нет фото
+                    avatarEl.style.overflow = 'hidden';
                     avatarEl.innerHTML = user.first_name ? user.first_name[0].toUpperCase() : '✂️';
-                    avatarEl.style.fontSize = '20px';
+                    avatarEl.style.fontSize = '18px';
                     avatarEl.style.fontWeight = '700';
                     avatarEl.style.color = '#fff';
                 }
@@ -1657,7 +1659,39 @@
             try { tg.HapticFeedback.notificationOccurred(err ? 'error' : 'success'); } catch (e) { }
             setTimeout(() => t.classList.remove('show'), 2500);
         }
-        function toggleDayOffUI() { const reg = document.getElementById('regularFields'); if (reg) reg.style.display = document.getElementById('isDayOff').checked ? 'none' : 'block'; if (!document.getElementById('isDayOff').checked) generateTimeSlots(); }
+        function toggleDayOffUI() {
+            const isDayOff = document.getElementById('isDayOff').checked;
+            const reg = document.getElementById('regularFields');
+            const container = document.getElementById('isDayOff').closest('.input-group');
+            if (reg) reg.style.display = isDayOff ? 'none' : 'block';
+            if (!isDayOff) generateTimeSlots();
+            // Визуальная обратная связь на чекбоксе
+            if (container) {
+                if (isDayOff) {
+                    container.style.background = 'rgba(52,199,89,0.18)';
+                    container.style.border = '2px solid rgba(52,199,89,0.5)';
+                    container.style.borderRadius = '14px';
+                    const label = container.querySelector('label');
+                    if (label) label.style.color = '#1d1d1f';
+                    // Добавяем текст подтверждения
+                    let badge = document.getElementById('dayOffBadge');
+                    if (!badge) {
+                        badge = document.createElement('div');
+                        badge.id = 'dayOffBadge';
+                        badge.style.cssText = 'margin-top:10px; text-align:center; background:rgba(52,199,89,0.15); padding:12px; border-radius:12px; font-weight:700; font-size:14px; color:#27ae60;';
+                        badge.innerHTML = '✅ Выходной день отмечен! Остальные поля скрыты.';
+                        const addBlock = document.getElementById('regularFields');
+                        if (addBlock) addBlock.parentNode.insertBefore(badge, addBlock);
+                    }
+                    badge.style.display = 'block';
+                } else {
+                    container.style.background = '';
+                    container.style.border = '';
+                    const badge = document.getElementById('dayOffBadge');
+                    if (badge) badge.style.display = 'none';
+                }
+            }
+        }
         function resetAddForm() {
             document.getElementById('clientName').value = '';
             document.getElementById('clientPhone').value = '';
