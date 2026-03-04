@@ -1232,24 +1232,20 @@
             <label>Дата</label>
             <div style="position:relative;">
                 <input type="date" id="appDate" onchange="generateTimeSlots()"
-                    style="background:var(--glass-bg); backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px); border:2px solid rgba(108,92,231,0.3); padding:14px 16px; border-radius:14px; font-weight:600; color:#1d1d1f;">
+                    style="background:var(--glass-bg); backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px); border:2px solid rgba(108,92,231,0.3); padding:14px 16px; border-radius:14px; font-weight:600; color:#1d1d1f; width:100%;">
             </div>
         </div>
-        <div id="regularFields">
-            <div class="input-group">
-                <label>Время</label>
-                <div style="position:relative; z-index:100;" id="timeDropdownContainer">
-                    <div id="timeDropdownDisplay"
-                        onclick="document.getElementById('timeDropdownList').style.display = document.getElementById('timeDropdownList').style.display === 'none' ? 'block' : 'none'"
-                        style="padding:14px 16px; border:2px solid rgba(108,92,231,0.3); border-radius:14px; background:#ffffff; color:#1d1d1f; font-size:16px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-                        <span>Выберите время</span><span style="font-size:12px; color:#6c5ce7;">▼</span>
-                    </div>
-                    <div id="timeDropdownList"
-                        style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:2px solid rgba(108,92,231,0.3); border-radius:14px; margin-top:4px; max-height:160px; overflow-y:auto; z-index:100; box-shadow:0 10px 20px rgba(0,0,0,0.15);">
-                    </div>
-                </div>
-                <input type="hidden" id="appTime" value="">
+
+        <div class="input-group">
+            <label>Время</label>
+            <div id="timeDropdownDisplay" onclick="toggleTimeDropdown(event)"
+                style="padding:14px 16px; border:2px solid rgba(108,92,231,0.3); border-radius:14px; background:#ffffff; color:#1d1d1f; font-size:16px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                <span>Выберите время</span><span style="font-size:12px; color:#6c5ce7;">▼</span>
             </div>
+            <input type="hidden" id="appTime" value="">
+        </div>
+
+        <div id="regularFields">
             <div class="input-group"><label>Имя клиента</label><input type="text" id="clientName"
                     placeholder="Напр. Марина"></div>
             <div class="input-group"><label>Телефон</label><input type="tel" id="clientPhone"
@@ -1282,6 +1278,11 @@
         <div class="input-group"><label id="notesLabel">Заметки</label><textarea id="notes"
                 placeholder="Любые заметки..."></textarea></div>
         <button class="action-btn" id="saveBtn" onclick="saveAppointment()">Сохранить</button>
+    </div>
+
+    <!-- ДОБАВЛЯЕМ СПИСОК В КОРЕНЬ BODY -->
+    <div id="timeDropdownList"
+        style="display:none; position:absolute; background:#fff; border:2px solid rgba(108,92,231,0.3); border-radius:14px; margin-top:4px; max-height:160px; overflow-y:auto; z-index:999999; box-shadow:0 10px 20px rgba(0,0,0,0.15);">
     </div>
 
     <!-- ЭКРАН: КАЛЕНДАРЬ -->
@@ -1999,10 +2000,25 @@
             document.getElementById('clientVk').value = vk || '';
         }
 
-        document.addEventListener('click', function (e) {
-            const dropdown = document.getElementById('timeDropdownContainer');
+        function toggleTimeDropdown(e) {
+            e.stopPropagation();
             const list = document.getElementById('timeDropdownList');
-            if (dropdown && list && !dropdown.contains(e.target)) {
+            const display = document.getElementById('timeDropdownDisplay');
+            if (list.style.display === 'block') {
+                list.style.display = 'none';
+            } else {
+                const rect = display.getBoundingClientRect();
+                list.style.display = 'block';
+                list.style.top = (rect.bottom + window.scrollY) + 'px';
+                list.style.left = (rect.left + window.scrollX) + 'px';
+                list.style.width = rect.width + 'px';
+            }
+        }
+
+        document.addEventListener('click', function (e) {
+            const list = document.getElementById('timeDropdownList');
+            const display = document.getElementById('timeDropdownDisplay');
+            if (display && list && !display.contains(e.target) && !list.contains(e.target)) {
                 list.style.display = 'none';
             }
         });
