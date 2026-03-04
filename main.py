@@ -3,13 +3,15 @@
 # 2. python -m pip install --upgrade aiogram aiohttp fastapi uvicorn sqlalchemy pydantic --only-binary :all:
 
 import asyncio
+import base64
+import io
 from datetime import datetime, date
 from contextlib import asynccontextmanager
 from typing import Optional, List
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo, BufferedInputFile
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,11 +20,15 @@ import uvicorn
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database import Base, Master, Client, Appointment
+from database import Base, Master, Client, Appointment, Photo
 
 # === КОНФИГУРАЦИЯ ===
 TOKEN = "8624226286:AAECzu8_BTLj2IcZbP8isJDwH8koF9P9Vt0"
 APP_URL = "https://precious-stroopwafel-138809.netlify.app/"
+
+# Telegram chat для хранения фото (ID чата куда бот будет слать фото)
+# Используем чат самого мастера — фото будут приходить ему в личку
+PHOTO_STORAGE_CHAT = None  # Будет установлен при первом /start
 
 # === БАЗА ДАННЫХ (SQLite) ===
 
@@ -40,6 +46,9 @@ def get_main_keyboard():
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
+    global PHOTO_STORAGE_CHAT
+    PHOTO_STORAGE_CHAT = message.chat.id
+    
     db_session = Session()
     try:
         master = db_session.query(Master).filter_by(telegram_id=str(message.from_user.id)).first()
@@ -56,11 +65,18 @@ class AppointmentPayload(BaseModel):
     date: str
     time: Optional[str] = "-"
     name: Optional[str] = "Выходной"
+    phone: Optional[str] = ""
     service: Optional[str] = "-"
     price: Optional[float] = 0.0
     notes: Optional[str] = ""
     telegram_id: Optional[str] = "unknown"
     isDayOff: Optional[bool] = False
+
+class PhotoPayload(BaseModel):
+    image_base64: str
+    client_name: str
+    telegram_id: str
+    description: Optional[str] = ""
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -79,12 +95,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- НОВЫЙ ЭНДПОИНТ: ЗАГРУЗКА ВСЕХ ДАННЫХ ---
+# --- ЗАГРУЗКА ВСЕХ ДАННЫХ ---
 @app.get("/api/sync/{tg_id}")
 async def sync_data(tg_id: str):
     db_session = Session()
     try:
-        # Получаем все записи мастера, сортируем по дате
         apps = db_session.query(Appointment).filter_by(telegram_id=tg_id).order_by(Appointment.appointment_date).all()
         
         result = {}
@@ -95,18 +110,18 @@ async def sync_data(tg_id: str):
             if d_str not in result:
                 result[d_str] = []
             
-            # Ищем заметку клиента, если это не выходной
-            client_notes = a.client.notes if a.client else (a.service if a.is_day_off else "")
             client_name = a.client.name if a.client else "Выходной"
+            client_phone = a.client.phone if a.client else ""
 
             result[d_str].append({
-                "id": a.id, # Добавляем ID для возможности удаления
+                "id": a.id,
                 "date": d_str,
                 "time": t_str,
                 "name": client_name,
+                "phone": client_phone,
                 "service": a.service,
                 "price": a.price,
-                "notes": client_notes,
+                "notes": "",
                 "isDayOff": a.is_day_off
             })
         return result
@@ -116,7 +131,7 @@ async def sync_data(tg_id: str):
     finally:
         db_session.close()
 
-# --- НОВЫЙ ЭНДПОИНТ: УДАЛЕНИЕ ЗАПИСИ ---
+# --- УДАЛЕНИЕ ЗАПИСИ ---
 @app.delete("/api/appointments/{app_id}")
 async def delete_appointment(app_id: int):
     db_session = Session()
@@ -133,6 +148,7 @@ async def delete_appointment(app_id: int):
     finally:
         db_session.close()
 
+# --- СОЗДАНИЕ ЗАПИСИ ---
 @app.post("/api/appointments")
 async def create_appointment(payload: AppointmentPayload):
     db_session = Session()
@@ -152,11 +168,12 @@ async def create_appointment(payload: AppointmentPayload):
             appt_dt = datetime.strptime(f"{payload.date} {payload.time}", "%Y-%m-%d %H:%M")
             client = db_session.query(Client).filter_by(name=payload.name).first()
             if not client:
-                client = Client(name=payload.name, notes=payload.notes)
+                client = Client(name=payload.name, phone=payload.phone, notes=payload.notes)
                 db_session.add(client)
                 db_session.commit()
             else:
-                client.notes = payload.notes
+                if payload.phone:
+                    client.phone = payload.phone
             
             new_appt = Appointment(
                 client_id=client.id, 
@@ -167,7 +184,8 @@ async def create_appointment(payload: AppointmentPayload):
                 telegram_id=payload.telegram_id
             )
             db_session.add(new_appt)
-            msg_text = (f"✅ <b>Новая запись!</b>\n\n👤 {payload.name}\n"
+            phone_str = f"\n📞 {payload.phone}" if payload.phone else ""
+            msg_text = (f"✅ <b>Новая запись!</b>\n\n👤 {payload.name}{phone_str}\n"
                         f"⏰ {payload.time}\n💇‍♀️ {payload.service}\n💰 {payload.price} ₽")
 
         db_session.commit()
@@ -177,6 +195,82 @@ async def create_appointment(payload: AppointmentPayload):
     except Exception as e:
         db_session.rollback()
         print(f"Ошибка сохранения: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db_session.close()
+
+# --- ЗАГРУЗКА ФОТО (через Telegram как хранилище) ---
+@app.post("/api/photos")
+async def upload_photo(payload: PhotoPayload):
+    try:
+        # Декодируем base64 в байты
+        image_data = base64.b64decode(payload.image_base64.split(",")[-1])
+        
+        # Отправляем фото в Telegram (боту самому себе или мастеру)
+        chat_id = int(payload.telegram_id) if payload.telegram_id != "unknown" else PHOTO_STORAGE_CHAT
+        if not chat_id:
+            raise HTTPException(status_code=400, detail="No chat ID available")
+        
+        photo_file = BufferedInputFile(image_data, filename="photo.jpg")
+        caption = f"📸 {payload.client_name}"
+        if payload.description:
+            caption += f"\n{payload.description}"
+        
+        result = await bot.send_photo(
+            chat_id=chat_id,
+            photo=photo_file,
+            caption=caption
+        )
+        
+        # Сохраняем file_id в базу
+        file_id = result.photo[-1].file_id  # Берём самое большое разрешение
+        
+        db_session = Session()
+        try:
+            new_photo = Photo(
+                client_name=payload.client_name,
+                telegram_file_id=file_id,
+                telegram_id=payload.telegram_id,
+                description=payload.description
+            )
+            db_session.add(new_photo)
+            db_session.commit()
+            return {"status": "success", "file_id": file_id}
+        finally:
+            db_session.close()
+            
+    except Exception as e:
+        print(f"Ошибка загрузки фото: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- ПОЛУЧИТЬ ФОТО КЛИЕНТА ---
+@app.get("/api/photos/{client_name}")
+async def get_client_photos(client_name: str, telegram_id: str = "unknown"):
+    db_session = Session()
+    try:
+        photos = db_session.query(Photo).filter_by(
+            client_name=client_name, 
+            telegram_id=telegram_id
+        ).order_by(Photo.created_at.desc()).all()
+        
+        result = []
+        for p in photos:
+            # Получаем URL фото через Telegram API
+            try:
+                file = await bot.get_file(p.telegram_file_id)
+                file_url = f"https://api.telegram.org/file/bot{TOKEN}/{file.file_path}"
+                result.append({
+                    "id": p.id,
+                    "url": file_url,
+                    "description": p.description or "",
+                    "date": p.created_at.strftime("%d.%m.%Y") if p.created_at else ""
+                })
+            except Exception:
+                continue
+        
+        return result
+    except Exception as e:
+        print(f"Ошибка получения фото: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db_session.close()

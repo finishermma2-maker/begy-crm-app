@@ -14,7 +14,8 @@ class Client(Base):
     __tablename__ = 'clients'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    notes = Column(String) 
+    phone = Column(String, nullable=True)
+    notes = Column(String)
 
 class Appointment(Base):
     __tablename__ = 'appointments'
@@ -24,6 +25,19 @@ class Appointment(Base):
     price = Column(Float, default=0.0)
     is_day_off = Column(Boolean, default=False)
     appointment_date = Column(DateTime)
-    telegram_id = Column(String) # Чтобы фильтровать данные конкретного мастера
+    telegram_id = Column(String)
     
     client = relationship("Client")
+    photos = relationship("Photo", back_populates="appointment")
+
+class Photo(Base):
+    __tablename__ = 'photos'
+    id = Column(Integer, primary_key=True)
+    appointment_id = Column(Integer, ForeignKey('appointments.id'), nullable=True)
+    client_name = Column(String)
+    telegram_file_id = Column(String)
+    telegram_id = Column(String)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    appointment = relationship("Appointment", back_populates="photos")

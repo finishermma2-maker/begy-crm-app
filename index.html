@@ -791,6 +791,155 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        /* ===== ФОТО ГАЛЕРЕЯ ===== */
+        .photo-upload-area {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 2px dashed var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 14px;
+        }
+
+        .photo-upload-area:active {
+            transform: scale(0.97);
+            border-color: var(--accent-light);
+        }
+
+        .photo-upload-area .upload-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+
+        .photo-upload-area .upload-text {
+            font-size: 14px;
+            color: var(--text-white);
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .photo-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .photo-preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .photo-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-preview-item .remove-photo {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(255, 59, 48, 0.85);
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .client-photos-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .client-photos-grid img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .client-photos-grid img:active {
+            transform: scale(0.93);
+        }
+
+        /* Полноэкранный просмотр фото */
+        .photo-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .photo-fullscreen img {
+            max-width: 95vw;
+            max-height: 90vh;
+            border-radius: 12px;
+        }
+
+        .photo-fullscreen .close-fs {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .photo-date-badge {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+
+        .photo-count-badge {
+            background: var(--accent);
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        #fileInput {
+            display: none;
+        }
     </style>
 </head>
 
@@ -878,6 +1027,8 @@
             <div class="input-group"><label>Время</label><select id="appTime"></select></div>
             <div class="input-group"><label>Имя клиента</label><input type="text" id="clientName"
                     placeholder="Напр. Марина"></div>
+            <div class="input-group"><label>Телефон</label><input type="tel" id="clientPhone"
+                    placeholder="+7 900 123 45 67"></div>
             <div class="input-group">
                 <label>Услуга</label>
                 <select id="service">
@@ -889,9 +1040,18 @@
             </div>
             <div class="input-group"><label>Стоимость услуги (₽)</label><input type="number" id="appPrice"
                     placeholder="0"></div>
+            <div class="input-group"><label>📸 Фото работы</label>
+                <input type="file" id="fileInput" accept="image/*" capture="environment" multiple
+                    onchange="handlePhotoSelect(event)">
+                <div class="photo-upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Нажмите чтобы сделать фото</div>
+                </div>
+                <div id="photoPreviewGrid" class="photo-preview-grid"></div>
+            </div>
         </div>
-        <div class="input-group"><label id="notesLabel">Заметки / Формула цвета</label><textarea id="notes"
-                placeholder="Формула: 9.21 + 3%..."></textarea></div>
+        <div class="input-group"><label id="notesLabel">Заметки</label><textarea id="notes"
+                placeholder="Любые заметки..."></textarea></div>
         <button class="action-btn" id="saveBtn" onclick="saveAppointment()">Сохранить</button>
     </div>
 
@@ -918,6 +1078,12 @@
         <input type="text" class="search-box" id="clientSearch" placeholder="Поиск по имени..."
             oninput="renderClientsList()">
         <div id="clientsListContainer"></div>
+        <!-- Полноэкранный просмотр фото -->
+        <div id="photoFullscreen" class="photo-fullscreen" style="display:none" onclick="this.style.display='none'">
+            <button class="close-fs"
+                onclick="event.stopPropagation(); document.getElementById('photoFullscreen').style.display='none'">✕</button>
+            <img id="fullscreenImg" src="">
+        </div>
     </div>
 
     <!-- ЭКРАН: ФИНАНСЫ -->
@@ -945,10 +1111,12 @@
     <div id="toastMessage" class="toast-notification">Сообщение</div>
 
     <script>
-        const API_URL = "https://rich-clocks-fold.loca.lt";
+        const API_URL = "https://begy-crm-bot.onrender.com";
 
         let tg = window.Telegram.WebApp;
         let masterTgId = "unknown";
+        let photosObj = {}; // Кэш фотографий
+        let selectedPhotosBase64 = []; // Для новой записи
 
         try {
             tg.ready(); tg.expand(); tg.setHeaderColor('#6C5CE7');
@@ -1030,21 +1198,114 @@
             if (!cont) return;
             const q = document.getElementById('clientSearch').value.toLowerCase();
             let clients = {};
+
             Object.values(db).flat().forEach(a => {
                 if (a.isDayOff) return;
                 let n = a.name.trim();
-                if (!clients[n]) clients[n] = { count: 0, last: '', formula: '' };
+                if (!clients[n]) clients[n] = { count: 0, last: '', notes: '', phone: '' };
                 clients[n].count++;
                 if (!clients[n].last || a.date > clients[n].last) clients[n].last = a.date;
-                if (a.notes) clients[n].formula = a.notes;
+                if (a.notes) clients[n].notes = a.notes;
+                if (a.phone) clients[n].phone = a.phone;
             });
-            cont.innerHTML = Object.keys(clients).sort().filter(n => n.toLowerCase().includes(q)).map(n => `
-                <div class="client-card">
-                    <div style="display:flex; justify-content:space-between"><b>${n}</b><small style="color:var(--purple-card)">визитов: ${clients[n].count}</small></div>
-                    <div style="font-size:11px; color:gray; margin-top:4px">Последний раз: ${clients[n].last}</div>
-                    ${clients[n].formula ? `<div class="client-formula">📝 Формула: ${clients[n].formula}</div>` : ''}
+
+            cont.innerHTML = Object.keys(clients).sort().filter(n => n.toLowerCase().includes(q)).map(n => {
+                let html = `
+                <div class="client-card" id="client-card-${n.replace(/\s/g, '')}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b>${n}</b>
+                        <small style="color:var(--purple-card)">визитов: ${clients[n].count}</small>
+                    </div>
+                    <div style="font-size:11px; color:gray; margin-top:4px">Последний раз: ${clients[n].last}</div>`;
+
+                if (clients[n].phone) {
+                    // Кнопка WhatsApp/Telegram
+                    html += `
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <a href="tel:${clients[n].phone}" style="flex:1; background:var(--glass-bg); padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px; border:1px solid var(--glass-border); color:var(--text-dark)">📞 Позвонить</a>
+                        <a href="https://wa.me/${clients[n].phone.replace(/[^0-9]/g, '')}" target="_blank" style="flex:1; background:#25D366; color:white; padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px;">💬 WhatsApp</a>
+                        <a href="https://t.me/+${clients[n].phone.replace(/[^0-9]/g, '')}" target="_blank" style="flex:1; background:#0088cc; color:white; padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px;">✈️ Telegram</a>
+                    </div>`;
+                }
+
+                if (clients[n].notes) {
+                    html += `<div class="client-formula" style="margin-top:8px">📝 Заметки: ${clients[n].notes}</div>`;
+                }
+
+                // Контейнер для фото (будет загружен асинхронно)
+                html += `
+                    <button onclick="loadClientPhotos('${n}')" style="margin-top:10px; width:100%; background:var(--accent-light); border:none; padding:8px; border-radius:8px; color:var(--text-dark); cursor:pointer;">
+                        📷 Показать фото работ
+                    </button>
+                    <div id="photos-${n.replace(/\s/g, '')}" class="client-photos-grid"></div>
+                </div>`;
+                return html;
+            }).join('') || '<p style="text-align:center; color:gray">Клиенты не найдены</p>';
+        }
+
+        async function loadClientPhotos(clientName) {
+            const gridId = 'photos-' + clientName.replace(/\s/g, '');
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+
+            grid.innerHTML = '<div style="text-align:center; grid-column:1/-1; padding:10px; font-size:12px; color:gray">Загрузка фото...</div>';
+
+            try {
+                const res = await fetch(`${API_URL}/api/photos/${encodeURIComponent(clientName)}?telegram_id=${masterTgId}`);
+                if (res.ok) {
+                    const photos = await res.json();
+                    if (photos.length === 0) {
+                        grid.innerHTML = '<div style="text-align:center; grid-column:1/-1; padding:10px; font-size:12px; color:gray">Нет сохраненных фото</div>';
+                        return;
+                    }
+                    grid.innerHTML = photos.map(p => `
+                        <div style="position:relative">
+                            <img src="${p.url}" onclick="openFullscreen('${p.url}')">
+                            <span class="photo-date-badge">${p.date}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    grid.innerHTML = '<div style="text-align:center; grid-column:1/-1; padding:10px; font-size:12px; color:red">Ошибка загрузки</div>';
+                }
+            } catch (e) {
+                grid.innerHTML = '<div style="text-align:center; grid-column:1/-1; padding:10px; font-size:12px; color:red">Нет связи с сервером</div>';
+            }
+        }
+
+        function openFullscreen(url) {
+            document.getElementById('fullscreenImg').src = url;
+            document.getElementById('photoFullscreen').style.display = 'flex';
+        }
+
+        // --- ЛОГИКА КАМЕРЫ ДЛЯ НОВОЙ ЗАПИСИ ---
+        function handlePhotoSelect(evt) {
+            const files = evt.target.files;
+            const grid = document.getElementById('photoPreviewGrid');
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const b64 = e.target.result;
+                    selectedPhotosBase64.push(b64);
+                    renderPhotoPreviewGrid();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderPhotoPreviewGrid() {
+            const grid = document.getElementById('photoPreviewGrid');
+            grid.innerHTML = selectedPhotosBase64.map((b64, index) => `
+                <div class="photo-preview-item">
+                    <img src="${b64}">
+                    <button class="remove-photo" onclick="removePhoto(${index})">✕</button>
                 </div>
-            `).join('') || '<p style="text-align:center; color:gray">Клиенты не найдены</p>';
+            `).join('');
+        }
+
+        function removePhoto(index) {
+            selectedPhotosBase64.splice(index, 1);
+            renderPhotoPreviewGrid();
         }
 
         function renderFinanceStats() {
@@ -1098,7 +1359,16 @@
             setTimeout(() => t.classList.remove('show'), 2500);
         }
         function toggleDayOffUI() { const reg = document.getElementById('regularFields'); if (reg) reg.style.display = document.getElementById('isDayOff').checked ? 'none' : 'block'; if (!document.getElementById('isDayOff').checked) generateTimeSlots(); }
-        function resetAddForm() { document.getElementById('clientName').value = ''; document.getElementById('notes').value = ''; document.getElementById('appPrice').value = ''; document.getElementById('isDayOff').checked = false; toggleDayOffUI(); }
+        function resetAddForm() {
+            document.getElementById('clientName').value = '';
+            document.getElementById('clientPhone').value = '';
+            document.getElementById('notes').value = '';
+            document.getElementById('appPrice').value = '';
+            document.getElementById('isDayOff').checked = false;
+            selectedPhotosBase64 = [];
+            renderPhotoPreviewGrid();
+            toggleDayOffUI();
+        }
 
         function generateTimeSlots() {
             let ds = document.getElementById('appDate').value, sel = document.getElementById('appTime'); if (!sel) return; sel.innerHTML = '';
@@ -1129,7 +1399,7 @@
                 }
 
                 if (db[ds] && db[ds].length > 0 && !db[ds][0].isDayOff) return showToast("Там уже есть записи!", true);
-                item = { isDayOff: true, date: ds, notes: document.getElementById('notes').value };
+                item = { isDayOff: true, date: ds, notes: document.getElementById('notes').value, telegram_id: masterTgId };
                 db[ds] = [item];
             } else {
                 let n = document.getElementById('clientName').value, t = document.getElementById('appTime').value;
@@ -1141,9 +1411,37 @@
                     return showToast("❌ Нельзя добавлять записи задним числом!", true);
                 }
 
-                item = { date: ds, time: t, name: n, price: document.getElementById('appPrice').value, service: document.getElementById('service').value, notes: document.getElementById('notes').value, telegram_id: masterTgId };
+                item = {
+                    date: ds,
+                    time: t,
+                    name: n,
+                    phone: document.getElementById('clientPhone').value,
+                    price: document.getElementById('appPrice').value,
+                    service: document.getElementById('service').value,
+                    notes: document.getElementById('notes').value,
+                    telegram_id: masterTgId
+                };
                 if (!db[ds]) db[ds] = [];
                 db[ds].push(item);
+
+                // Если есть фото - отправляем их на сервер
+                if (selectedPhotosBase64.length > 0) {
+                    showToast("Отправка фото...", false);
+                    for (let b64 of selectedPhotosBase64) {
+                        try {
+                            await fetch(`${API_URL}/api/photos`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    image_base64: b64,
+                                    client_name: n,
+                                    telegram_id: masterTgId,
+                                    description: `Работа от ${ds}`
+                                })
+                            });
+                        } catch (e) { console.error('Photo error', e); }
+                    }
+                }
             }
 
             localStorage.setItem('begy_crm', JSON.stringify(db));
