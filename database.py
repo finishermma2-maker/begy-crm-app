@@ -15,6 +15,7 @@ class Client(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     phone = Column(String, nullable=True)
+    client_tg = Column(String, nullable=True)
     notes = Column(String)
 
 class Appointment(Base):

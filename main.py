@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from database import Base, Master, Client, Appointment, Photo
 
@@ -35,6 +35,12 @@ PHOTO_STORAGE_CHAT = None  # Будет установлен при первом
 engine = create_engine('sqlite:///hairdresser_crm.db')
 Session = sessionmaker(bind=engine)
 Base.metadata.create_all(engine)
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE clients ADD COLUMN client_tg VARCHAR;"))
+except Exception:
+    pass
 
 # === ТЕЛЕГРАМ БОТ ===
 bot = Bot(token=TOKEN)
@@ -66,6 +72,7 @@ class AppointmentPayload(BaseModel):
     time: Optional[str] = "-"
     name: Optional[str] = "Выходной"
     phone: Optional[str] = ""
+    client_tg: Optional[str] = ""
     service: Optional[str] = "-"
     price: Optional[float] = 0.0
     notes: Optional[str] = ""
@@ -112,6 +119,7 @@ async def sync_data(tg_id: str):
             
             client_name = a.client.name if a.client else "Выходной"
             client_phone = a.client.phone if a.client else ""
+            client_tg_val = a.client.client_tg if a.client and hasattr(a.client, 'client_tg') else ""
 
             result[d_str].append({
                 "id": a.id,
@@ -119,6 +127,7 @@ async def sync_data(tg_id: str):
                 "time": t_str,
                 "name": client_name,
                 "phone": client_phone,
+                "client_tg": client_tg_val,
                 "service": a.service,
                 "price": a.price,
                 "notes": "",
@@ -169,11 +178,15 @@ async def create_appointment(payload: AppointmentPayload):
             client = db_session.query(Client).filter_by(name=payload.name).first()
             if not client:
                 client = Client(name=payload.name, phone=payload.phone, notes=payload.notes)
+                if hasattr(client, 'client_tg'):
+                    client.client_tg = payload.client_tg
                 db_session.add(client)
                 db_session.commit()
             else:
                 if payload.phone:
                     client.phone = payload.phone
+                if payload.client_tg and hasattr(client, 'client_tg'):
+                    client.client_tg = payload.client_tg
             
             new_appt = Appointment(
                 client_id=client.id, 
@@ -185,7 +198,8 @@ async def create_appointment(payload: AppointmentPayload):
             )
             db_session.add(new_appt)
             phone_str = f"\n📞 {payload.phone}" if payload.phone else ""
-            msg_text = (f"✅ <b>Новая запись!</b>\n\n👤 {payload.name}{phone_str}\n"
+            tg_str = f" / ✈️ {payload.client_tg}" if hasattr(payload, 'client_tg') and payload.client_tg else ""
+            msg_text = (f"✅ <b>Новая запись!</b>\n\n👤 {payload.name}{phone_str}{tg_str}\n"
                         f"⏰ {payload.time}\n💇‍♀️ {payload.service}\n💰 {payload.price} ₽")
 
         db_session.commit()
