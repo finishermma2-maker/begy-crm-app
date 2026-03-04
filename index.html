@@ -1572,7 +1572,23 @@
             }
             document.getElementById('modalActionBtns').innerHTML = btnsHtml;
 
+            let rebookBtn = `<button onclick="rebookClient('${name.replace(/'/g, "\\'")}', '${phone || ''}', '${tg || ''}')" style="margin-top:10px; width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer;">📅 Записать снова</button>`;
+
+            // Если кнопка уже была добавлена, убираем старую
+            let existingRebook = document.getElementById('rebookContainer');
+            if (existingRebook) existingRebook.remove();
+
+            document.getElementById('modalActionBtns').insertAdjacentHTML('afterend', `<div id="rebookContainer">${rebookBtn}</div>`);
+
             document.getElementById('appDetailsModal').classList.add('show');
+        }
+
+        function rebookClient(name, phone, tg) {
+            document.getElementById('appDetailsModal').classList.remove('show');
+            openView('add');
+            document.getElementById('clientName').value = name;
+            document.getElementById('clientPhone').value = phone;
+            document.getElementById('clientTg').value = tg;
         }
 
         function generateTimeSlots() {
