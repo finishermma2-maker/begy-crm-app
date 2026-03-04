@@ -1692,8 +1692,22 @@
         }
 
         function getDayHtml(ds, apps) {
-            if (apps.length === 0) return '<div style="text-align:center; padding:20px; color:gray">Свободный день 🏖</div>';
-            if (apps[0].isDayOff) return '<div class="day-off-card stagger-item">🏖 Выходной день<br><small>' + (apps[0].notes || '') + '</small><br><button onclick="delete db[\'' + ds + '\']; localStorage.setItem(\'begy_crm\', JSON.stringify(db)); renderMonthCalendar(); if(document.getElementById(\'view-home\').classList.contains(\'active\')){switchScheduleTab(\'today\')} " style="margin-top:10px; border:none; background:#ffcdd2; color:#c62828; padding:5px 10px; border-radius:5px">Отменить</button></div>';
+            if (apps.length === 0) {
+                return `
+                <div style="text-align:center; padding:30px 10px;">
+                    <div style="font-size:40px; margin-bottom:10px;">🏝</div>
+                    <div style="color:var(--text-primary); font-size:16px; font-weight:600; margin-bottom:15px;">Выходной</div>
+                </div>`;
+            }
+            if (apps[0].isDayOff) {
+                return `
+                <div class="client-card stagger-item" style="text-align:center; background: rgba(255,107,107,0.15); border: 1px solid rgba(255,107,107,0.3);">
+                    <div style="font-size:30px; margin-bottom:5px;">🏖</div>
+                    <div style="color:white; font-size:16px; font-weight:600;">Выходной день</div>
+                    <small style="color:rgba(255,255,255,0.7); display:block; margin:5px 0 15px 0;">${apps[0].notes || ''}</small>
+                    <button onclick="delete db['${ds}']; localStorage.setItem('begy_crm', JSON.stringify(db)); renderMonthCalendar(); if(document.getElementById('view-home').classList.contains('active')){switchScheduleTab('today')} " style="width:100%; border:none; background:rgba(255,255,255,0.2); color:white; font-weight:600; padding:10px; border-radius:10px; backdrop-filter:blur(10px); cursor:pointer;">Отменить выходной</button>
+                </div>`;
+            }
             return apps.sort((a, b) => timeToMins(a.time) - timeToMins(b.time)).map((a, idx) => `
                 <div class="client-card stagger-item" style="animation-delay: ${idx * 0.08}s; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 12px 16px;" 
                      onclick="showAppDetails('${a.name}', '${a.service}', '${a.phone || ''}', '${a.client_tg || ''}', '${a.price || ''}', '${(a.notes || '').replace(/\n/g, ' ')}')">
