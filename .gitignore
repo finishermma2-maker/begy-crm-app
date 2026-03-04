@@ -10,7 +10,6 @@ __pycache__/
 *.exe
 
 # Системные файлы
-*.txt
 Thumbs.db
 .DS_Store
 

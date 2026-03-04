@@ -1,0 +1,6 @@
+aiogram
+aiohttp
+fastapi
+uvicorn
+sqlalchemy
+pydantic
