@@ -1233,12 +1233,11 @@
         <div id="regularFields">
             <div class="input-group">
                 <label>Время</label>
-                <div style="position:relative;" id="timeDropdownContainer">
+                <div style="position:relative; z-index:100;" id="timeDropdownContainer">
                     <div id="timeDropdownDisplay"
                         onclick="document.getElementById('timeDropdownList').style.display = document.getElementById('timeDropdownList').style.display === 'none' ? 'block' : 'none'"
                         style="padding:14px 16px; border:2px solid rgba(108,92,231,0.3); border-radius:14px; background:#ffffff; color:#1d1d1f; font-size:16px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-                        <span>Выберите время</span><span style="font-size:12px; color:#6c5ce7;">▼</span>
-                    </div>
+                        <span>Выберите время</span><span style="font-size:12px; color:#6c5ce7;">▼</span></div>
                     <div id="timeDropdownList"
                         style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:2px solid rgba(108,92,231,0.3); border-radius:14px; margin-top:4px; max-height:200px; overflow-y:auto; z-index:100; box-shadow:0 10px 20px rgba(0,0,0,0.15);">
                     </div>
