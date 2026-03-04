@@ -15,6 +15,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uvicorn
 
@@ -24,7 +25,7 @@ from database import Base, Master, Client, Appointment, Photo
 
 # === КОНФИГУРАЦИЯ ===
 TOKEN = "8624226286:AAECzu8_BTLj2IcZbP8isJDwH8koF9P9Vt0"
-APP_URL = "https://precious-stroopwafel-138809.netlify.app/"
+APP_URL = "https://begy-crm-bot.onrender.com"
 
 # Telegram chat для хранения фото (ID чата куда бот будет слать фото)
 # Используем чат самого мастера — фото будут приходить ему в личку
@@ -102,6 +103,11 @@ async def lifespan(app: FastAPI):
     await bot.session.close()
 
 app = FastAPI(lifespan=lifespan)
+
+# --- ОТДАЧА ФРОНТЕНДА ---
+@app.get("/")
+async def serve_index():
+    return FileResponse("index.html")
 
 app.add_middleware(
     CORSMiddleware,
