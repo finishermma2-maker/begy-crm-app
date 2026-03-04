@@ -575,7 +575,7 @@
             box-sizing: border-box;
             font-family: inherit;
             outline: none;
-            box-shadow: var(--glass-shadow);
+            box-shadow: none;
             transition: border-color 0.2s, box-shadow 0.2s;
             -webkit-appearance: none;
             appearance: none;
@@ -1157,6 +1157,8 @@
                     placeholder="+7 900 123 45 67"></div>
             <div class="input-group"><label>Telegram Клиента</label><input type="text" id="clientTg"
                     placeholder="@username (необязательно)"></div>
+            <div class="input-group"><label>ВКонтакте</label><input type="text" id="clientVk"
+                    placeholder="vk.com/id или ник (необязательно)"></div>
             <div class="input-group">
                 <label>Услуга</label>
                 <select id="service">
@@ -1255,7 +1257,11 @@
                 <b id="modalTg">-</b>
             </div>
             <div class="modal-info-row">
-                <span>💰 Стоимость:</span>
+                <span>� ВКонтакте:</span>
+                <b id="modalVk">-</b>
+            </div>
+            <div class="modal-info-row">
+                <span>�💰 Стоимость:</span>
                 <b id="modalPrice">-</b>
             </div>
 
@@ -1357,18 +1363,20 @@
             Object.values(db).flat().forEach(a => {
                 if (a.isDayOff) return;
                 let n = a.name.trim();
-                if (!clients[n]) clients[n] = { count: 0, last: '', notes: '', phone: '', client_tg: '' };
+                if (!clients[n]) clients[n] = { count: 0, last: '', notes: '', phone: '', client_tg: '', client_vk: '' };
                 clients[n].count++;
                 if (!clients[n].last || a.date > clients[n].last) clients[n].last = a.date;
                 if (a.notes) clients[n].notes = a.notes;
                 if (a.phone) clients[n].phone = a.phone;
                 if (a.client_tg) clients[n].client_tg = a.client_tg;
+                if (a.client_vk) clients[n].client_vk = a.client_vk;
             });
 
             cont.innerHTML = Object.keys(clients).sort().filter(n => n.toLowerCase().includes(q)).map((n, idx) => {
                 let html = `
                 <div class="client-card stagger-item" id="client-card-${n.replace(/\s/g, '')}" style="animation-delay: ${idx * 0.08}s"
-                     onclick="showAppDetails('${n}', 'Клиент', '${clients[n].phone || ''}', '${clients[n].client_tg || ''}', '', '${(clients[n].notes || '').replace(/\n/g, ' ')}')">
+                     onclick="showAppDetails('${n}', 'Клиент', '${clients[n].phone || ''}', '${clients[n].client_tg || ''}', '', '${(clients[n].notes || '').replace(/\n/g, ' ')}', '${clients[n].client_vk || ''}')">
+
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <b>${n}</b>
                         <small style="color:var(--purple-card)">визитов: ${clients[n].count}</small>
@@ -1553,6 +1561,7 @@
             document.getElementById('clientName').value = '';
             document.getElementById('clientPhone').value = '';
             document.getElementById('clientTg').value = '';
+            document.getElementById('clientVk').value = '';
             document.getElementById('notes').value = '';
             document.getElementById('appPrice').value = '';
             document.getElementById('isDayOff').checked = false;
@@ -1593,11 +1602,12 @@
             }
         }
 
-        function showAppDetails(name, service, phone, tg, price, notes) {
+        function showAppDetails(name, service, phone, tg, price, notes, vk) {
             document.getElementById('modalName').innerText = name || 'Неизвестно';
             document.getElementById('modalService').innerText = service || 'Услуга не указана';
             document.getElementById('modalPhone').innerText = phone || 'Не указан';
             document.getElementById('modalTg').innerText = tg || 'Не указан';
+            document.getElementById('modalVk').innerText = vk || 'Не указан';
             document.getElementById('modalPrice').innerText = price ? `${price} ₽` : '0 ₽';
 
             let notesEl = document.getElementById('modalNotes');
@@ -1611,16 +1621,18 @@
             let btnsHtml = '';
             if (phone) {
                 btnsHtml += `<a href="tel:${phone}" style="flex:1; background:var(--glass-bg); padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px; border:1px solid var(--glass-border); color:var(--text-dark)">📞 Позвонить</a>`;
-                btnsHtml += `<a href="https://wa.me/${phone.replace(/[^0-9]/g, '')}" target="_blank" style="flex:1; background:#25D366; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;">💬 WhatsApp</a>`;
             }
             if (tg) {
                 btnsHtml += `<a href="https://t.me/${tg.replace('@', '').trim()}" target="_blank" style="flex:1; background:#0088cc; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;">✈️ Telegram</a>`;
             }
+            if (vk) {
+                let vkLink = vk.startsWith('http') ? vk : 'https://vk.com/' + vk.replace(/^vk\.com\//i, '');
+                btnsHtml += `<a href="${vkLink}" target="_blank" style="flex:1; background:#4C75A3; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;">🔵 ВКонтакте</a>`;
+            }
             document.getElementById('modalActionBtns').innerHTML = btnsHtml;
 
-            let rebookBtn = `<button onclick="rebookClient('${name.replace(/'/g, "\\'")}', '${phone || ''}', '${tg || ''}')" style="margin-top:10px; width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer;">📅 Записать снова</button>`;
+            let rebookBtn = `<button onclick="rebookClient('${name.replace(/'/g, "\\'")}', '${phone || ''}', '${tg || ''}', '${vk || ''}')" style="margin-top:10px; width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer;">📅 Записать снова</button>`;
 
-            // Если кнопка уже была добавлена, убираем старую
             let existingRebook = document.getElementById('rebookContainer');
             if (existingRebook) existingRebook.remove();
 
@@ -1629,12 +1641,13 @@
             document.getElementById('appDetailsModal').classList.add('show');
         }
 
-        function rebookClient(name, phone, tg) {
+        function rebookClient(name, phone, tg, vk) {
             document.getElementById('appDetailsModal').classList.remove('show');
             openView('add');
             document.getElementById('clientName').value = name;
             document.getElementById('clientPhone').value = phone;
             document.getElementById('clientTg').value = tg;
+            document.getElementById('clientVk').value = vk || '';
         }
 
         function generateTimeSlots() {
@@ -1684,6 +1697,7 @@
                     name: n,
                     phone: document.getElementById('clientPhone').value,
                     client_tg: document.getElementById('clientTg').value,
+                    client_vk: document.getElementById('clientVk').value,
                     price: document.getElementById('appPrice').value,
                     service: document.getElementById('service').value,
                     notes: document.getElementById('notes').value,
@@ -1759,7 +1773,7 @@
             let html = apps.sort((a, b) => timeToMins(a.time) - timeToMins(b.time)).map((a, idx) => `
                 <div class="client-card stagger-item" style="animation-delay:${idx * 0.08}s; margin-bottom:10px; padding:12px 14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
-                         onclick="showAppDetails('${a.name}', '${a.service}', '${a.phone || ''}', '${a.client_tg || ''}', '${a.price || ''}', '${(a.notes || '').replace(/'/g, "").replace(/\n/g, ' ')}')">
+                         onclick="showAppDetails('${a.name}', '${a.service}', '${a.phone || ''}', '${a.client_tg || ''}', '${a.price || ''}', '${(a.notes || '').replace(/'/g, "").replace(/\\n/g, ' ')}', '${a.client_vk || ''}')">
                         <div style="display:flex; align-items:center; gap:10px">
                             <span class="time-badge">${a.time}</span>
                             <div><b>${a.name}</b><br><small>${a.service}</small></div>
