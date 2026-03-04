@@ -11,7 +11,7 @@ from typing import Optional, List
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo, BufferedInputFile
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, BufferedInputFile
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,8 +47,9 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 def get_main_keyboard():
-    kb = [[KeyboardButton(text="📱 Открыть CRM", web_app=WebAppInfo(url=APP_URL))]]
-    return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+    # Отправляем Inline кнопку, так как она надежнее отображается на телефонах в новых чатах
+    kb = [[InlineKeyboardButton(text="📱 Открыть CRM", web_app=WebAppInfo(url=APP_URL))]]
+    return InlineKeyboardMarkup(inline_keyboard=kb)
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
