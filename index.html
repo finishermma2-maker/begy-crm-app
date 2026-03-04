@@ -1073,6 +1073,8 @@
             border: 1px solid var(--glass-border);
             width: 90%;
             max-width: 400px;
+            max-height: 85vh;
+            overflow-y: auto;
             border-radius: var(--radius-lg);
             padding: 24px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
@@ -1231,8 +1233,17 @@
         <div id="regularFields">
             <div class="input-group">
                 <label>Время</label>
+                <div style="position:relative;" id="timeDropdownContainer">
+                    <div id="timeDropdownDisplay"
+                        onclick="document.getElementById('timeDropdownList').style.display = document.getElementById('timeDropdownList').style.display === 'none' ? 'block' : 'none'"
+                        style="padding:14px 16px; border:2px solid rgba(108,92,231,0.3); border-radius:14px; background:#ffffff; color:#1d1d1f; font-size:16px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                        <span>Выберите время</span><span style="font-size:12px; color:#6c5ce7;">▼</span>
+                    </div>
+                    <div id="timeDropdownList"
+                        style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:2px solid rgba(108,92,231,0.3); border-radius:14px; margin-top:4px; max-height:200px; overflow-y:auto; z-index:100; box-shadow:0 10px 20px rgba(0,0,0,0.15);">
+                    </div>
+                </div>
                 <input type="hidden" id="appTime" value="">
-                <div class="time-chips-wrap" id="timeSlotsContainer"></div>
             </div>
             <div class="input-group"><label>Имя клиента</label><input type="text" id="clientName"
                     placeholder="Напр. Марина"></div>
@@ -1531,21 +1542,31 @@
                 .sort((a, b) => timeToMins(a.time) - timeToMins(b.time))
                 .slice(0, 3);
 
-            if (future.length === 0) { wrapper.innerHTML = ''; return; }
+            if (future.length === 0) { wrapper.innerHTML = ''; wrapper.dataset.names = ''; return; }
 
-            wrapper.innerHTML = future.map((app, i) => {
+            let futureNames = future.map(a => a.name + a.time).join('|');
+            if (wrapper.dataset.names !== futureNames) {
+                wrapper.dataset.names = futureNames;
+                wrapper.innerHTML = future.map((app, i) => `<div class="next-app-card" id="timer-card-${i}"><div><b>${app.name}</b><br><small>${app.service}</small></div><div class="next-app-timer" id="timer-val-${i}"></div></div>`).join('');
+            }
+
+            future.forEach((app, i) => {
                 let [h, m] = app.time.split(':');
                 let target = new Date(); target.setHours(parseInt(h), parseInt(m), 0, 0);
                 let diff = target - now; if (diff < 0) diff = 0;
                 let dm = Math.floor(diff / 60000), ds = Math.floor((diff % 60000) / 1000);
 
+                let card = document.getElementById(`timer-card-${i}`);
+                let val = document.getElementById(`timer-val-${i}`);
+                if (card && val) {
+                    val.innerText = formatTimeLeft(dm, ds);
+                    card.className = "next-app-card " + (dm > 60 ? "timer-green" : (dm > 15 ? "timer-yellow" : "timer-red"));
+                }
+
                 if (i === 0 && dm === 30 && ds === 0 && alarmPlayedFor !== app.time) {
                     playBeep(); showToast("⏰ Запись через 30 мин: " + app.name); alarmPlayedFor = app.time;
                 }
-
-                let cl = dm > 60 ? 'timer-green' : (dm > 15 ? 'timer-yellow' : 'timer-red');
-                return `<div class="next-app-card ${cl}"><div><b>${app.name}</b><br><small>${app.service}</small></div><div class="next-app-timer">${formatTimeLeft(dm, ds)}</div></div>`;
-            }).join('');
+            });
         }
         setInterval(() => { if (document.getElementById('view-home').classList.contains('active')) startTimer(); }, 1000);
 
@@ -1569,8 +1590,8 @@
 
             cont.innerHTML = Object.keys(clients).sort().filter(n => n.toLowerCase().includes(q)).map((n, idx) => {
                 let html = `
-                <div class="client-card stagger-item" id="client-card-${n.replace(/\s/g, '')}" style="animation-delay: ${idx * 0.08}s"
-                     onclick="showAppDetails('${n}', 'Клиент', '${clients[n].phone || ''}', '${clients[n].client_tg || ''}', '', '${(clients[n].notes || '').replace(/\n/g, ' ')}', '${clients[n].client_vk || ''}')">
+                        < div class="client-card stagger-item" id = "client-card-${n.replace(/\s/g, '')}" style = "animation-delay: ${idx * 0.08}s"
+                    onclick = "showAppDetails('${n}', 'Клиент', '${clients[n].phone || ''}', '${clients[n].client_tg || ''}', '', '${(clients[n].notes || '').replace(/\n/g, ' ')}', '${clients[n].client_vk || ''}')" >
 
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <b>${n}</b>
@@ -1585,7 +1606,7 @@
                         📷 Показать фото работ
                     </button>
                     <div id="photos-${n.replace(/\s/g, '')}" class="client-photos-grid" onclick="event.stopPropagation();"></div>
-                </div>`;
+                </div > `;
                 return html;
             }).join('') || '<p style="text-align:center; color:gray">Клиенты не найдены</p>';
         }
@@ -1598,7 +1619,7 @@
             grid.innerHTML = '<div style="text-align:center; grid-column:1/-1; padding:10px; font-size:12px; color:gray">Загрузка фото...</div>';
 
             try {
-                const res = await fetch(`${API_URL}/api/photos/${encodeURIComponent(clientName)}?telegram_id=${masterTgId}`);
+                const res = await fetch(`${API_URL} /api/photos / ${encodeURIComponent(clientName)}?telegram_id = ${masterTgId} `);
                 if (res.ok) {
                     const photos = await res.json();
                     if (photos.length === 0) {
@@ -1606,10 +1627,10 @@
                         return;
                     }
                     grid.innerHTML = photos.map(p => `
-                        <div style="position:relative">
+                        < div style = "position:relative" >
                             <img src="${p.url}" onclick="openFullscreen('${p.url}')">
-                            <span class="photo-date-badge">${p.date}</span>
-                        </div>
+                                <span class="photo-date-badge">${p.date}</span>
+                            </div>
                     `).join('');
                 } else {
                     grid.innerHTML = '<div style="text-align:center; grid-column:1/-1; padding:10px; font-size:12px; color:red">Ошибка загрузки</div>';
@@ -1643,11 +1664,11 @@
         function renderPhotoPreviewGrid() {
             const grid = document.getElementById('photoPreviewGrid');
             grid.innerHTML = selectedPhotosBase64.map((b64, index) => `
-                <div class="photo-preview-item">
-                    <img src="${b64}">
-                    <button class="remove-photo" onclick="removePhoto(${index})">✕</button>
-                </div>
-            `).join('');
+                        < div class="photo-preview-item" >
+                            <img src="${b64}">
+                                <button class="remove-photo" onclick="removePhoto(${index})">✕</button>
+                            </div>
+                    `).join('');
         }
 
         function removePhoto(index) {
@@ -1678,16 +1699,16 @@
         function renderMonthCalendar() {
             const titleEl = document.getElementById('calMonthYear');
             if (!titleEl) return;
-            titleEl.innerText = `${monthNamesNom[calM]} ${calY}`;
+            titleEl.innerText = `${monthNamesNom[calM]} ${calY} `;
             let grid = document.getElementById('calDaysGrid'), first = new Date(calY, calM, 1).getDay();
-            grid.innerHTML = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(d => `<div style="text-align:center; font-size:11px; color:gray">${d}</div>`).join('');
+            grid.innerHTML = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(d => `< div style = "text-align:center; font-size:11px; color:gray" > ${d}</div > `).join('');
             first = (first === 0 ? 6 : first - 1);
             for (let i = 0; i < first; i++) grid.innerHTML += '<div></div>';
             for (let d = 1; d <= new Date(calY, calM + 1, 0).getDate(); d++) {
-                let ds = `${calY}-${String(calM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                let ds = `${calY} -${String(calM + 1).padStart(2, '0')} -${String(d).padStart(2, '0')} `;
                 let h = db[ds] && db[ds].length > 0;
                 let off = h && db[ds][0].isDayOff;
-                grid.innerHTML += `<div onclick="calSelected='${ds}'; renderMonthCalendar()" class="day-cell ${ds === todayStr ? 'today' : ''} ${ds === calSelected ? 'selected' : ''} ${h ? (off ? 'is-off' : 'has-apps') : ''}" style="width:30px; height:30px; margin:auto">${d}</div>`;
+                grid.innerHTML += `< div onclick = "calSelected='${ds}'; renderMonthCalendar()" class="day-cell ${ds === todayStr ? 'today' : ''} ${ds === calSelected ? 'selected' : ''} ${h ? (off ? 'is-off' : 'has-apps') : ''}" style = "width:30px; height:30px; margin:auto" > ${d}</div > `;
             }
             const labelEl = document.getElementById('selectedDayLabel');
             if (labelEl) labelEl.innerText = "Планы на " + calSelected;
@@ -1712,7 +1733,7 @@
             showToast('🏖 Выходной установлен!');
             renderMonthCalendar();
             try {
-                await fetch(`${API_URL}/api/appointments`, {
+                await fetch(`${API_URL} /api/appointments`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(db[ds][0])
@@ -1781,13 +1802,13 @@
         }
 
         function shareClientInfo(name, phone, tg, notes) {
-            let text = `👤 Имя: ${name}\n📞 Телефон: ${phone}`;
-            if (tg) text += `\n✈️ Telegram: ${tg}`;
-            if (notes) text += `\n📝 Заметки: ${notes}`;
+            let text = `👤 Имя: ${name} \n📞 Телефон: ${phone} `;
+            if (tg) text += `\n✈️ Telegram: ${tg} `;
+            if (notes) text += `\n📝 Заметки: ${notes} `;
 
             // Напрямую формируем Share Data
             const shareData = {
-                title: `Контакт: ${name}`,
+                title: `Контакт: ${name} `,
                 text: text
             };
 
@@ -1830,7 +1851,7 @@
 
             let notesEl = document.getElementById('modalNotes');
             if (notes) {
-                notesEl.innerText = `📝 Заметки: ${notes}`;
+                notesEl.innerText = `📝 Заметки: ${notes} `;
                 notesEl.style.display = 'block';
             } else {
                 notesEl.style.display = 'none';
@@ -1842,14 +1863,14 @@
 
             let btnsHtml = '';
             if (phone) {
-                btnsHtml += `<a href="tel:${phone}" style="flex:1; background:var(--glass-bg); padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px; border:1px solid var(--glass-border); color:var(--text-dark)">📞 Позвонить</a>`;
+                btnsHtml += `< a href = "tel:${phone}" style = "flex:1; background:var(--glass-bg); padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px; border:1px solid var(--glass-border); color:var(--text-dark)" >📞 Позвонить</a > `;
             }
             if (tg) {
-                btnsHtml += `<a href="https://t.me/${tg.replace('@', '').trim()}" target="_blank" style="flex:1; background:#0088cc; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;">✈️ Telegram</a>`;
+                btnsHtml += `< a href = "https://t.me/${tg.replace('@', '').trim()}" target = "_blank" style = "flex:1; background:#0088cc; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;" >✈️ Telegram</a > `;
             }
             if (vk) {
                 let vkLink = vk.startsWith('http') ? vk : 'https://vk.com/' + vk.replace(/^vk\.com\//i, '');
-                btnsHtml += `<a href="${vkLink}" target="_blank" style="flex:1; background:#4C75A3; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;">🔵 ВКонтакте</a>`;
+                btnsHtml += `< a href = "${vkLink}" target = "_blank" style = "flex:1; background:#4C75A3; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;" >🔵 ВКонтакте</a > `;
             }
             document.getElementById('modalActionBtns').innerHTML = btnsHtml;
 
@@ -1860,10 +1881,10 @@
             let extraHtml = '';
             // Кнопка редактирования (только если это запись из календаря)
             if (currentEditDate !== null && currentEditIndex !== null) {
-                extraHtml += `<button onclick="editAppointment()" style="width:100%; background:linear-gradient(135deg, #667eea, #764ba2); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer; margin-bottom:8px;">✏️ Редактировать</button>`;
-                extraHtml += `<button onclick="showAddServiceForm()" style="width:100%; background:linear-gradient(135deg, #34c759, #2ecc71); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer; margin-bottom:8px;">➕ Добавить услугу</button>`;
+                extraHtml += `< button onclick = "editAppointment()" style = "width:100%; background:linear-gradient(135deg, #667eea, #764ba2); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer; margin-bottom:8px;" >✏️ Редактировать</button > `;
+                extraHtml += `< button onclick = "showAddServiceForm()" style = "width:100%; background:linear-gradient(135deg, #34c759, #2ecc71); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer; margin-bottom:8px;" >➕ Добавить услугу</button > `;
             }
-            extraHtml += `<button onclick="rebookClient('${name.replace(/'/g, "\\'")}', '${phone || ''}', '${tg || ''}', '${vk || ''}')" style="width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer;">📅 Записать снова</button>`;
+            extraHtml += `< button onclick = "rebookClient('${name.replace(/'/g, "\\'")}', '${phone || ''}', '${tg || ''}', '${vk || ''}')" style="width: 100 %; background: var(--accent); color: white; border: none; padding: 12px; border - radius: 10px; font - weight: bold; font - size: 15px; cursor: pointer; ">📅 Записать снова</button>`;
 
             document.getElementById('modalActionBtns').insertAdjacentHTML('afterend', `<div id="modalExtraBtns" style="margin-top:10px;">${extraHtml}</div>`);
 
@@ -1973,10 +1994,19 @@
             document.getElementById('clientVk').value = vk || '';
         }
 
+        document.addEventListener('click', function (e) {
+            const dropdown = document.getElementById('timeDropdownContainer');
+            const list = document.getElementById('timeDropdownList');
+            if (dropdown && list && !dropdown.contains(e.target)) {
+                list.style.display = 'none';
+            }
+        });
+
         function generateTimeSlots() {
             let ds = document.getElementById('appDate').value;
-            const container = document.getElementById('timeSlotsContainer');
+            const container = document.getElementById('timeDropdownList');
             const hidden = document.getElementById('appTime');
+            const displaySpan = document.getElementById('timeDropdownDisplay') ? document.getElementById('timeDropdownDisplay').querySelector('span') : null;
             if (!container || !ds) return;
             container.innerHTML = '';
             if (hidden) hidden.value = '';
@@ -1994,22 +2024,24 @@
             }
 
             if (slots.length === 0) {
-                container.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.7); font-size:13px; padding:12px; background:rgba(255,255,255,0.1); border-radius:12px;">Нет свободных слотов на эту дату</div>';
+                container.innerHTML = '<div style="padding:14px 16px; color:gray; font-size:14px; text-align:center;">Нет свободных мест</div>';
+                if (displaySpan) displaySpan.innerText = 'Нет мест';
                 return;
             }
 
             if (hidden) hidden.value = slots[0];
-            slots.forEach((ts, i) => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.textContent = ts;
-                btn.className = 'time-chip' + (i === 0 ? ' selected' : '');
-                btn.onclick = () => {
-                    container.querySelectorAll('.time-chip').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
+            if (displaySpan) displaySpan.innerText = slots[0];
+            slots.forEach((ts) => {
+                const div = document.createElement('div');
+                div.textContent = ts;
+                div.style.cssText = 'padding:14px 16px; font-size:16px; font-weight:600; color:#1d1d1f; cursor:pointer; border-bottom:1px solid #f0f0f0; background:#fff;';
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    if (displaySpan) displaySpan.innerText = ts;
                     if (hidden) hidden.value = ts;
+                    container.style.display = 'none';
                 };
-                container.appendChild(btn);
+                container.appendChild(div);
             });
         }
 
