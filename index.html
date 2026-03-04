@@ -1041,11 +1041,12 @@
             <div class="input-group"><label>Стоимость услуги (₽)</label><input type="number" id="appPrice"
                     placeholder="0"></div>
             <div class="input-group"><label>📸 Фото работы</label>
-                <input type="file" id="fileInput" accept="image/*" capture="environment" multiple
+                <!-- capture="environment" заставляет интерфейс открывать именно камеру вместо галереи -->
+                <input type="file" id="fileInput" accept="image/*" capture="environment"
                     onchange="handlePhotoSelect(event)">
                 <div class="photo-upload-area" onclick="document.getElementById('fileInput').click()">
                     <div class="upload-icon">📷</div>
-                    <div class="upload-text">Нажмите чтобы сделать фото</div>
+                    <div class="upload-text">Нажмите чтобы включить камеру</div>
                 </div>
                 <div id="photoPreviewGrid" class="photo-preview-grid"></div>
             </div>
