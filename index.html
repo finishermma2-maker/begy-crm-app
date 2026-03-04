@@ -1080,6 +1080,8 @@
                     placeholder="Напр. Марина"></div>
             <div class="input-group"><label>Телефон</label><input type="tel" id="clientPhone"
                     placeholder="+7 900 123 45 67"></div>
+            <div class="input-group"><label>Telegram Клиента</label><input type="text" id="clientTg"
+                    placeholder="@username (необязательно)"></div>
             <div class="input-group">
                 <label>Услуга</label>
                 <select id="service">
@@ -1253,11 +1255,12 @@
             Object.values(db).flat().forEach(a => {
                 if (a.isDayOff) return;
                 let n = a.name.trim();
-                if (!clients[n]) clients[n] = { count: 0, last: '', notes: '', phone: '' };
+                if (!clients[n]) clients[n] = { count: 0, last: '', notes: '', phone: '', client_tg: '' };
                 clients[n].count++;
                 if (!clients[n].last || a.date > clients[n].last) clients[n].last = a.date;
                 if (a.notes) clients[n].notes = a.notes;
                 if (a.phone) clients[n].phone = a.phone;
+                if (a.client_tg) clients[n].client_tg = a.client_tg;
             });
 
             cont.innerHTML = Object.keys(clients).sort().filter(n => n.toLowerCase().includes(q)).map((n, idx) => {
@@ -1275,8 +1278,12 @@
                     <div style="display:flex; gap:8px; margin-top:8px;">
                         <a href="tel:${clients[n].phone}" style="flex:1; background:var(--glass-bg); padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px; border:1px solid var(--glass-border); color:var(--text-dark)">📞 Позвонить</a>
                         <a href="https://wa.me/${clients[n].phone.replace(/[^0-9]/g, '')}" target="_blank" style="flex:1; background:#25D366; color:white; padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px;">💬 WhatsApp</a>
-                        <a href="https://t.me/+${clients[n].phone.replace(/[^0-9]/g, '')}" target="_blank" style="flex:1; background:#0088cc; color:white; padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px;">✈️ Telegram</a>
-                    </div>`;
+                        ${clients[n].client_tg ? `<a href="https://t.me/${clients[n].client_tg.replace('@', '')}" target="_blank" style="flex:1; background:#0088cc; color:white; padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px;">✈️ Telegram</a>` : ''}
+                    </div>
+                    <button onclick="shareClientInfo('${n}', '${clients[n].phone}', '${clients[n].client_tg || ''}', '${clients[n].notes || ''}')" style="margin-top:8px; width:100%; background:var(--glass-bg); border:1px solid var(--accent); padding:8px; border-radius:8px; color:var(--accent); cursor:pointer; font-weight: 600;">
+                        📤 Поделиться контактом
+                    </button>
+                    `;
                 }
 
                 if (clients[n].notes) {
@@ -1413,12 +1420,31 @@
         function resetAddForm() {
             document.getElementById('clientName').value = '';
             document.getElementById('clientPhone').value = '';
+            document.getElementById('clientTg').value = '';
             document.getElementById('notes').value = '';
             document.getElementById('appPrice').value = '';
             document.getElementById('isDayOff').checked = false;
             selectedPhotosBase64 = [];
             renderPhotoPreviewGrid();
             toggleDayOffUI();
+        }
+
+        function shareClientInfo(name, phone, tg, notes) {
+            let text = `👤 Имя: ${name}\n📞 Телефон: ${phone}`;
+            if (tg) text += `\n✈️ Telegram: ${tg}`;
+            if (notes) text += `\n📝 Заметки: ${notes}`;
+
+            // Открываем нативное меню "Поделиться" если поддерживается
+            if (navigator.share) {
+                navigator.share({
+                    title: `Контакт клиента: ${name}`,
+                    text: text
+                }).catch(console.error);
+            } else {
+                // Иначе копируем в буфер и показываем плашку
+                navigator.clipboard.writeText(text);
+                showToast("Контакт скопирован в буфер обмена!");
+            }
         }
 
         function generateTimeSlots() {
@@ -1467,6 +1493,7 @@
                     time: t,
                     name: n,
                     phone: document.getElementById('clientPhone').value,
+                    client_tg: document.getElementById('clientTg').value,
                     price: document.getElementById('appPrice').value,
                     service: document.getElementById('service').value,
                     notes: document.getElementById('notes').value,
