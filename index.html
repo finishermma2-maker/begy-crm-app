@@ -1257,15 +1257,47 @@
                 <b id="modalTg">-</b>
             </div>
             <div class="modal-info-row">
-                <span>� ВКонтакте:</span>
+                <span>🔵 ВКонтакте:</span>
                 <b id="modalVk">-</b>
             </div>
             <div class="modal-info-row">
-                <span>�💰 Стоимость:</span>
+                <span>💰 Стоимость:</span>
                 <b id="modalPrice">-</b>
             </div>
 
             <div id="modalNotes" class="client-formula" style="margin-top:15px; display:none;"></div>
+
+            <!-- Блок редактирования (скрыт по умолчанию) -->
+            <div id="editBlock"
+                style="display:none; margin-top:15px; border-top:1px solid rgba(0,0,0,0.08); padding-top:15px;">
+                <div style="font-weight:700; font-size:13px; color:var(--accent); margin-bottom:10px;">✏️ Редактирование
+                </div>
+                <div class="input-group" style="margin-bottom:10px;">
+                    <label style="font-size:11px;">Услуга</label>
+                    <select id="editService" style="padding:10px 12px; font-size:14px;">
+                        <option value="Стрижка">Стрижка</option>
+                        <option value="Окрашивание">Окрашивание</option>
+                        <option value="Сложное окрашивание">Сложное окрашивание</option>
+                        <option value="Укладка">Укладка</option>
+                        <option value="Стрижка + Окрашивание">Стрижка + Окрашивание</option>
+                        <option value="Стрижка + Укладка">Стрижка + Укладка</option>
+                        <option value="Окрашивание + Укладка">Окрашивание + Укладка</option>
+                        <option value="Полный комплекс">Полный комплекс</option>
+                    </select>
+                </div>
+                <div class="input-group" style="margin-bottom:10px;">
+                    <label style="font-size:11px;">Стоимость (₽)</label>
+                    <input type="number" id="editPrice" placeholder="0" style="padding:10px 12px; font-size:14px;">
+                </div>
+                <div class="input-group" style="margin-bottom:10px;">
+                    <label style="font-size:11px;">Заметки</label>
+                    <textarea id="editNotes" placeholder="Доп. заметки..."
+                        style="padding:10px 12px; font-size:14px; min-height:60px;"></textarea>
+                </div>
+                <button onclick="saveEditedAppointment()"
+                    style="width:100%; background:var(--success); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer;">💾
+                    Сохранить изменения</button>
+            </div>
 
             <div id="modalActionBtns" style="display:flex; gap:10px; margin-top:20px;"></div>
         </div>
@@ -1602,13 +1634,21 @@
             }
         }
 
-        function showAppDetails(name, service, phone, tg, price, notes, vk) {
+        // === МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ===
+        let currentEditDate = null;
+        let currentEditIndex = null;
+
+        function showAppDetails(name, service, phone, tg, price, notes, vk, editDate, editIndex) {
             document.getElementById('modalName').innerText = name || 'Неизвестно';
             document.getElementById('modalService').innerText = service || 'Услуга не указана';
             document.getElementById('modalPhone').innerText = phone || 'Не указан';
             document.getElementById('modalTg').innerText = tg || 'Не указан';
             document.getElementById('modalVk').innerText = vk || 'Не указан';
             document.getElementById('modalPrice').innerText = price ? `${price} ₽` : '0 ₽';
+
+            // Сохраняем дату и индекс для редактирования
+            currentEditDate = editDate || null;
+            currentEditIndex = (editIndex !== undefined && editIndex !== null) ? parseInt(editIndex) : null;
 
             let notesEl = document.getElementById('modalNotes');
             if (notes) {
@@ -1617,6 +1657,9 @@
             } else {
                 notesEl.style.display = 'none';
             }
+
+            // Скрываем блок редактирования по умолчанию
+            document.getElementById('editBlock').style.display = 'none';
 
             let btnsHtml = '';
             if (phone) {
@@ -1631,14 +1674,72 @@
             }
             document.getElementById('modalActionBtns').innerHTML = btnsHtml;
 
-            let rebookBtn = `<button onclick="rebookClient('${name.replace(/'/g, "\\'")}', '${phone || ''}', '${tg || ''}', '${vk || ''}')" style="margin-top:10px; width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer;">📅 Записать снова</button>`;
+            // Кнопки под контактами
+            let existingExtra = document.getElementById('modalExtraBtns');
+            if (existingExtra) existingExtra.remove();
 
-            let existingRebook = document.getElementById('rebookContainer');
-            if (existingRebook) existingRebook.remove();
+            let extraHtml = '';
+            // Кнопка редактирования (только если это запись из календаря)
+            if (currentEditDate !== null && currentEditIndex !== null) {
+                extraHtml += `<button onclick="editAppointment()" style="width:100%; background:linear-gradient(135deg, #667eea, #764ba2); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer; margin-bottom:8px;">✏️ Редактировать</button>`;
+            }
+            extraHtml += `<button onclick="rebookClient('${name.replace(/'/g, "\\'")}', '${phone || ''}', '${tg || ''}', '${vk || ''}')" style="width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer;">📅 Записать снова</button>`;
 
-            document.getElementById('modalActionBtns').insertAdjacentHTML('afterend', `<div id="rebookContainer">${rebookBtn}</div>`);
+            document.getElementById('modalActionBtns').insertAdjacentHTML('afterend', `<div id="modalExtraBtns" style="margin-top:10px;">${extraHtml}</div>`);
 
             document.getElementById('appDetailsModal').classList.add('show');
+        }
+
+        function editAppointment() {
+            if (currentEditDate === null || currentEditIndex === null) return;
+            let app = db[currentEditDate] && db[currentEditDate][currentEditIndex];
+            if (!app) return showToast('Запись не найдена', true);
+
+            // Заполняем поля редактирования текущими данными
+            document.getElementById('editService').value = app.service || 'Стрижка';
+            document.getElementById('editPrice').value = app.price || '';
+            document.getElementById('editNotes').value = app.notes || '';
+
+            // Показываем блок редактирования
+            document.getElementById('editBlock').style.display = 'block';
+            document.getElementById('editBlock').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function saveEditedAppointment() {
+            if (currentEditDate === null || currentEditIndex === null) return;
+            let app = db[currentEditDate] && db[currentEditDate][currentEditIndex];
+            if (!app) return showToast('Запись не найдена', true);
+
+            // Обновляем данные
+            app.service = document.getElementById('editService').value;
+            app.price = document.getElementById('editPrice').value;
+            app.notes = document.getElementById('editNotes').value;
+
+            // Сохраняем локально
+            localStorage.setItem('begy_crm', JSON.stringify(db));
+            showToast('✅ Запись обновлена!');
+
+            // Обновляем модальное окно
+            document.getElementById('modalService').innerText = app.service;
+            document.getElementById('modalPrice').innerText = app.price ? `${app.price} ₽` : '0 ₽';
+            if (app.notes) {
+                document.getElementById('modalNotes').innerText = `📝 Заметки: ${app.notes}`;
+                document.getElementById('modalNotes').style.display = 'block';
+            }
+            document.getElementById('editBlock').style.display = 'none';
+
+            // Обновляем календарь и дашборд
+            renderMonthCalendar();
+            updateDashboard();
+
+            // Синхронизируем с сервером
+            try {
+                await fetch(`${API_URL}/api/appointments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(app)
+                });
+            } catch (e) { console.error('Sync error:', e); }
         }
 
         function rebookClient(name, phone, tg, vk) {
@@ -1773,7 +1874,7 @@
             let html = apps.sort((a, b) => timeToMins(a.time) - timeToMins(b.time)).map((a, idx) => `
                 <div class="client-card stagger-item" style="animation-delay:${idx * 0.08}s; margin-bottom:10px; padding:12px 14px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
-                         onclick="showAppDetails('${a.name}', '${a.service}', '${a.phone || ''}', '${a.client_tg || ''}', '${a.price || ''}', '${(a.notes || '').replace(/'/g, "").replace(/\\n/g, ' ')}', '${a.client_vk || ''}')">
+                         onclick="showAppDetails('${a.name}', '${a.service}', '${a.phone || ''}', '${a.client_tg || ''}', '${a.price || ''}', '${(a.notes || '').replace(/'/g, "&quot;").replace(/\\n/g, ' ')}', '${a.client_vk || ''}', '${ds}', ${idx})">
                         <div style="display:flex; align-items:center; gap:10px">
                             <span class="time-badge">${a.time}</span>
                             <div><b>${a.name}</b><br><small>${a.service}</small></div>
