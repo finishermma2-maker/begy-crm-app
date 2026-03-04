@@ -955,14 +955,44 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .app-details-modal.show .app-details-content {
+            transform: translateY(0);
+        }
+
+        .close-modal-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.05);
             border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-size: 20px;
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            font-size: 14px;
             cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .modal-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding-bottom: 8px;
+        }
+
+        .modal-info-row span {
+            color: var(--text-secondary);
+        }
+
+        .modal-info-row b {
+            color: var(--text-primary);
+            text-align: right;
         }
 
         .photo-date-badge {
@@ -1163,6 +1193,33 @@
 
     <div id="toastMessage" class="toast-notification">Сообщение</div>
 
+    <!-- Модальное окно для информации о записи -->
+    <div id="appDetailsModal" class="app-details-modal">
+        <div class="app-details-content">
+            <button class="close-modal-btn"
+                onclick="document.getElementById('appDetailsModal').classList.remove('show')">✕</button>
+            <h3 id="modalName" style="margin-top:0; color:var(--text-primary);">Имя</h3>
+            <div id="modalService" style="font-size:13px; color:var(--text-secondary); margin-bottom:15px;">Услуга</div>
+
+            <div class="modal-info-row">
+                <span>📞 Телефон:</span>
+                <b id="modalPhone">-</b>
+            </div>
+            <div class="modal-info-row">
+                <span>✈️ Telegram:</span>
+                <b id="modalTg">-</b>
+            </div>
+            <div class="modal-info-row">
+                <span>💰 Стоимость:</span>
+                <b id="modalPrice">-</b>
+            </div>
+
+            <div id="modalNotes" class="client-formula" style="margin-top:15px; display:none;"></div>
+
+            <div id="modalActionBtns" style="display:flex; gap:10px; margin-top:20px;"></div>
+        </div>
+    </div>
+
     <script>
         const API_URL = "https://begy-crm-bot.onrender.com";
 
@@ -1278,7 +1335,7 @@
                     <div style="display:flex; gap:8px; margin-top:8px;">
                         <a href="tel:${clients[n].phone}" style="flex:1; background:var(--glass-bg); padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px; border:1px solid var(--glass-border); color:var(--text-dark)">📞 Позвонить</a>
                         <a href="https://wa.me/${clients[n].phone.replace(/[^0-9]/g, '')}" target="_blank" style="flex:1; background:#25D366; color:white; padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px;">💬 WhatsApp</a>
-                        ${clients[n].client_tg ? `<a href="https://t.me/${clients[n].client_tg.replace('@', '')}" target="_blank" style="flex:1; background:#0088cc; color:white; padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px;">✈️ Telegram</a>` : ''}
+                        ${clients[n].client_tg ? `<a href="https://t.me/${clients[n].client_tg.replace('@', '').trim()}" target="_blank" style="flex:1; background:#0088cc; color:white; padding:6px; border-radius:8px; text-align:center; text-decoration:none; font-size:12px;">✈️ Telegram</a>` : ''}
                     </div>
                     <button onclick="shareClientInfo('${n}', '${clients[n].phone}', '${clients[n].client_tg || ''}', '${clients[n].notes || ''}')" style="margin-top:8px; width:100%; background:var(--glass-bg); border:1px solid var(--accent); padding:8px; border-radius:8px; color:var(--accent); cursor:pointer; font-weight: 600;">
                         📤 Поделиться контактом
@@ -1434,17 +1491,59 @@
             if (tg) text += `\n✈️ Telegram: ${tg}`;
             if (notes) text += `\n📝 Заметки: ${notes}`;
 
-            // Открываем нативное меню "Поделиться" если поддерживается
+            // Напрямую формируем Share Data
+            const shareData = {
+                title: `Контакт: ${name}`,
+                text: text
+            };
+
             if (navigator.share) {
-                navigator.share({
-                    title: `Контакт клиента: ${name}`,
-                    text: text
-                }).catch(console.error);
+                navigator.share(shareData).catch((e) => {
+                    console.error('Share failed', e);
+                    copyToClipboardFallback(text);
+                });
             } else {
-                // Иначе копируем в буфер и показываем плашку
-                navigator.clipboard.writeText(text);
-                showToast("Контакт скопирован в буфер обмена!");
+                copyToClipboardFallback(text);
             }
+        }
+
+        function copyToClipboardFallback(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast("Контакт скопирован в буфер!");
+                }).catch(e => {
+                    console.error('Clipboard error', e);
+                    showToast("Не удалось скопировать", true);
+                });
+            }
+        }
+
+        function showAppDetails(name, service, phone, tg, price, notes) {
+            document.getElementById('modalName').innerText = name || 'Неизвестно';
+            document.getElementById('modalService').innerText = service || 'Услуга не указана';
+            document.getElementById('modalPhone').innerText = phone || 'Не указан';
+            document.getElementById('modalTg').innerText = tg || 'Не указан';
+            document.getElementById('modalPrice').innerText = price ? `${price} ₽` : '0 ₽';
+
+            let notesEl = document.getElementById('modalNotes');
+            if (notes) {
+                notesEl.innerText = `📝 Заметки: ${notes}`;
+                notesEl.style.display = 'block';
+            } else {
+                notesEl.style.display = 'none';
+            }
+
+            let btnsHtml = '';
+            if (phone) {
+                btnsHtml += `<a href="tel:${phone}" style="flex:1; background:var(--glass-bg); padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px; border:1px solid var(--glass-border); color:var(--text-dark)">📞 Позвонить</a>`;
+                btnsHtml += `<a href="https://wa.me/${phone.replace(/[^0-9]/g, '')}" target="_blank" style="flex:1; background:#25D366; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;">💬 WhatsApp</a>`;
+            }
+            if (tg) {
+                btnsHtml += `<a href="https://t.me/${tg.replace('@', '').trim()}" target="_blank" style="flex:1; background:#0088cc; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;">✈️ Telegram</a>`;
+            }
+            document.getElementById('modalActionBtns').innerHTML = btnsHtml;
+
+            document.getElementById('appDetailsModal').classList.add('show');
         }
 
         function generateTimeSlots() {
@@ -1542,7 +1641,8 @@
             if (apps.length === 0) return '<div style="text-align:center; padding:20px; color:gray">Свободный день 🏖</div>';
             if (apps[0].isDayOff) return '<div class="day-off-card stagger-item">🏖 Выходной день<br><small>' + (apps[0].notes || '') + '</small><br><button onclick="delete db[\'' + ds + '\']; localStorage.setItem(\'begy_crm\', JSON.stringify(db)); renderMonthCalendar();" style="margin-top:10px; border:none; background:#ffcdd2; color:#c62828; padding:5px 10px; border-radius:5px">Отменить</button></div>';
             return apps.sort((a, b) => timeToMins(a.time) - timeToMins(b.time)).map((a, idx) => `
-                <div class="list-item stagger-item" style="animation-delay: ${idx * 0.08}s">
+                <div class="list-item stagger-item" style="animation-delay: ${idx * 0.08}s; cursor: pointer;" 
+                     onclick="showAppDetails('${a.name}', '${a.service}', '${a.phone || ''}', '${a.client_tg || ''}', '${a.price || ''}', '${(a.notes || '').replace(/\n/g, ' ')}')">
                     <div style="display:flex; align-items:center; gap:10px"><span class="time-badge">${a.time}</span><div><b>${a.name}</b><br><small>${a.service}</small></div></div>
                     <span class="price-text">${a.price || 0} ₽</span>
                 </div>
