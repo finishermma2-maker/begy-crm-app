@@ -85,10 +85,17 @@ class PhotoPayload(BaseModel):
     telegram_id: str
     description: Optional[str] = ""
 
+async def start_bot():
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+        await dp.start_polling(bot)
+    except Exception as e:
+        print(f"Ошибка polling: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Бот запущен и сервер API активен...")
-    polling_task = asyncio.create_task(dp.start_polling(bot))
+    polling_task = asyncio.create_task(start_bot())
     yield
     polling_task.cancel()
     await bot.session.close()
