@@ -2008,10 +2008,17 @@
                 list.style.display = 'none';
             } else {
                 const rect = display.getBoundingClientRect();
+                const viewAdd = document.getElementById('view-add');
+                // Calculate absolute position considering potential scrolling of the container itself
+                const scrollY = viewAdd && window.getComputedStyle(viewAdd).overflowY === 'auto' ? viewAdd.scrollTop : window.scrollY;
+                const scrollX = viewAdd && window.getComputedStyle(viewAdd).overflowX === 'auto' ? viewAdd.scrollLeft : window.scrollX;
+
                 list.style.display = 'block';
-                list.style.top = (rect.bottom + window.scrollY) + 'px';
-                list.style.left = (rect.left + window.scrollX) + 'px';
+                list.style.position = 'absolute';
+                list.style.top = (rect.bottom + scrollY) + 'px';
+                list.style.left = (rect.left + scrollX) + 'px';
                 list.style.width = rect.width + 'px';
+                list.style.zIndex = '2147483647'; // Maximum possible z-index
             }
         }
 
