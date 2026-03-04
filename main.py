@@ -25,7 +25,7 @@ from database import Base, Master, Client, Appointment, Photo
 
 # === КОНФИГУРАЦИЯ ===
 TOKEN = "8624226286:AAECzu8_BTLj2IcZbP8isJDwH8koF9P9Vt0"
-APP_URL = "https://begy-crm-bot.onrender.com"
+APP_URL = "https://begy-crm-app.onrender.com"
 
 # Telegram chat для хранения фото (ID чата куда бот будет слать фото)
 # Используем чат самого мастера — фото будут приходить ему в личку
