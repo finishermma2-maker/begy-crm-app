@@ -1,0 +1,29 @@
+[33mcommit 1314a3ad77143631cb5a897f313c4d842755e3a9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: finishermma2-maker <you@example.com>
+Date:   Mon Mar 9 18:37:22 2026 +0300
+
+    Исправление отображения кнопок
+
+[33mcommit 3f0fdb8345acb4ea7abede6aecb6b2f9062062c5[m
+Author: finishermma2-maker <you@example.com>
+Date:   Thu Mar 5 00:31:01 2026 +0300
+
+    fix: move dropdown to body to avoid clipping and context stacking issues
+
+[33mcommit 77a378c0dea7b572a9e37f48bb4611bc4b0af36e[m
+Author: finishermma2-maker <you@example.com>
+Date:   Thu Mar 5 00:28:00 2026 +0300
+
+    fix: move dropdown to body to avoid clipping and context stacking issues
+
+[33mcommit 401c469aec979ca21744f1a560864695f4532bdb[m
+Author: finishermma2-maker <you@example.com>
+Date:   Thu Mar 5 00:20:32 2026 +0300
+
+    style: fix dropdown height and date input appearance
+
+[33mcommit 947b59b02f3a47fb6170b7548b4887897ed05dfd[m
+Author: finishermma2-maker <you@example.com>
+Date:   Thu Mar 5 00:15:18 2026 +0300
+
+    fix: calendar HTML syntax error
