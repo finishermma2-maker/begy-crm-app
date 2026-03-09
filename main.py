@@ -87,6 +87,18 @@ class PhotoPayload(BaseModel):
     telegram_id: str
     description: Optional[str] = ""
 
+import aiohttp
+
+async def ping_server():
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(APP_URL) as response:
+                    pass
+        except Exception:
+            pass
+        await asyncio.sleep(600)  # Пингуем каждые 10 минут (600 сек)
+
 async def start_bot():
     try:
         await bot.delete_webhook(drop_pending_updates=True)
@@ -98,8 +110,10 @@ async def start_bot():
 async def lifespan(app: FastAPI):
     print("🚀 Бот запущен и сервер API активен...")
     polling_task = asyncio.create_task(start_bot())
+    ping_task = asyncio.create_task(ping_server())
     yield
     polling_task.cancel()
+    ping_task.cancel()
     await bot.session.close()
 
 app = FastAPI(lifespan=lifespan)
