@@ -1869,14 +1869,14 @@
 
             let btnsHtml = '';
             if (phone) {
-                btnsHtml += `< a href = "tel:${phone}" style = "flex:1; background:var(--glass-bg); padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px; border:1px solid var(--glass-border); color:var(--text-dark)" >📞 Позвонить</a > `;
+                btnsHtml += `<a href="tel:${phone}" style="flex:1; background:var(--glass-bg); padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px; border:1px solid var(--glass-border); color:var(--text-dark)">📞 Позвонить</a>`;
             }
             if (tg) {
-                btnsHtml += `< a href = "https://t.me/${tg.replace('@', '').trim()}" target = "_blank" style = "flex:1; background:#0088cc; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;" >✈️ Telegram</a > `;
+                btnsHtml += `<a href="https://t.me/${tg.replace('@', '').trim()}" target="_blank" style="flex:1; background:#0088cc; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;">✈️ Telegram</a>`;
             }
             if (vk) {
                 let vkLink = vk.startsWith('http') ? vk : 'https://vk.com/' + vk.replace(/^vk\.com\//i, '');
-                btnsHtml += `< a href = "${vkLink}" target = "_blank" style = "flex:1; background:#4C75A3; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;" >🔵 ВКонтакте</a > `;
+                btnsHtml += `<a href="${vkLink}" target="_blank" style="flex:1; background:#4C75A3; color:white; padding:10px; border-radius:10px; text-align:center; text-decoration:none; font-size:14px;">🔵 ВКонтакте</a>`;
             }
             document.getElementById('modalActionBtns').innerHTML = btnsHtml;
 
@@ -1887,10 +1887,10 @@
             let extraHtml = '';
             // Кнопка редактирования (только если это запись из календаря)
             if (currentEditDate !== null && currentEditIndex !== null) {
-                extraHtml += `< button onclick = "editAppointment()" style = "width:100%; background:linear-gradient(135deg, #667eea, #764ba2); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer; margin-bottom:8px;" >✏️ Редактировать</button > `;
-                extraHtml += `< button onclick = "showAddServiceForm()" style = "width:100%; background:linear-gradient(135deg, #34c759, #2ecc71); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer; margin-bottom:8px;" >➕ Добавить услугу</button > `;
+                extraHtml += `<button onclick="editAppointment()" style="width:100%; background:linear-gradient(135deg, #667eea, #764ba2); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer; margin-bottom:8px;">✏️ Редактировать</button>`;
+                extraHtml += `<button onclick="showAddServiceForm()" style="width:100%; background:linear-gradient(135deg, #34c759, #2ecc71); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer; margin-bottom:8px;">➕ Добавить услугу</button>`;
             }
-            extraHtml += `< button onclick = "rebookClient('${name.replace(/'/g, "\\'")}', '${phone || ''}', '${tg || ''}', '${vk || ''}')" style="width: 100 %; background: var(--accent); color: white; border: none; padding: 12px; border - radius: 10px; font - weight: bold; font - size: 15px; cursor: pointer; ">📅 Записать снова</button>`;
+            extraHtml += `<button onclick="rebookClient('${name.replace(/'/g, "\\'")}', '${phone || ''}', '${tg || ''}', '${vk || ''}')" style="width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer;">📅 Записать снова</button>`;
 
             document.getElementById('modalActionBtns').insertAdjacentHTML('afterend', `<div id="modalExtraBtns" style="margin-top:10px;">${extraHtml}</div>`);
 
