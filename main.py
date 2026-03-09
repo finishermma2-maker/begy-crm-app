@@ -48,8 +48,8 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 def get_main_keyboard():
-    # Отправляем Inline кнопку, так как она надежнее отображается на телефонах в новых чатах
-    kb = [[InlineKeyboardButton(text="📱 Открыть CRM", web_app=WebAppInfo(url=APP_URL))]]
+    # Отправляем Inline кнопку с уникальной ссылкой чтобы сбросить жесткий кэш Телеграма
+    kb = [[InlineKeyboardButton(text="📱 Открыть CRM", web_app=WebAppInfo(url=f"{APP_URL}?v=2"))]]
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
 @dp.message(Command("start"))
