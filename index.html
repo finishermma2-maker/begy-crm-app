@@ -2158,6 +2158,14 @@
                 let n = document.getElementById('clientName').value, t = document.getElementById('appTime').value;
                 if (!n || !t) return showToast("Заполните имя и время", true);
 
+                let p = document.getElementById('clientPhone').value;
+                if (p) {
+                    let digits = p.replace(/\D/g, '');
+                    if (digits.length > 0 && digits.length !== 11) {
+                        return showToast("❌ Некорректный телефон (нужно 11 цифр)!", true);
+                    }
+                }
+
                 // --- КРИТИЧЕСКАЯ ПРОВЕРКА ЗАДНЕГО ЧИСЛА ---
                 let selectedDateTime = new Date(`${ds}T${t}`);
                 if (selectedDateTime < now) {
