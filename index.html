@@ -1026,6 +1026,7 @@
             max-width: 95vw;
             max-height: 90vh;
             border-radius: 12px;
+            object-fit: contain;
         }
 
         .photo-fullscreen .close-fs {
@@ -1596,8 +1597,8 @@
 
             cont.innerHTML = Object.keys(clients).sort().filter(n => n.toLowerCase().includes(q)).map((n, idx) => {
                 let html = `
-                        < div class="client-card stagger-item" id = "client-card-${n.replace(/\s/g, '')}" style = "animation-delay: ${idx * 0.08}s"
-                    onclick = "showAppDetails('${n}', 'Клиент', '${clients[n].phone || ''}', '${clients[n].client_tg || ''}', '', '${(clients[n].notes || '').replace(/\n/g, ' ')}', '${clients[n].client_vk || ''}')" >
+                    <div class="client-card stagger-item" id="client-card-${n.replace(/\s/g, '')}" style="animation-delay: ${idx * 0.08}s"
+                    onclick="showAppDetails('${n}', 'Клиент', '${clients[n].phone || ''}', '${clients[n].client_tg || ''}', '', '${(clients[n].notes || '').replace(/\n/g, ' ')}', '${clients[n].client_vk || ''}')">
 
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <b>${n}</b>
@@ -1612,7 +1613,7 @@
                         📷 Показать фото работ
                     </button>
                     <div id="photos-${n.replace(/\s/g, '')}" class="client-photos-grid" onclick="event.stopPropagation();"></div>
-                </div > `;
+                </div>`;
                 return html;
             }).join('') || '<p style="text-align:center; color:gray">Клиенты не найдены</p>';
         }
@@ -1633,10 +1634,10 @@
                         return;
                     }
                     grid.innerHTML = photos.map(p => `
-                        < div style = "position:relative" >
+                        <div style="position:relative">
                             <img src="${p.url}" onclick="openFullscreen('${p.url}')">
-                                <span class="photo-date-badge">${p.date}</span>
-                            </div>
+                            <span class="photo-date-badge">${p.date}</span>
+                        </div>
                     `).join('');
                 } else {
                     grid.innerHTML = '<div style="text-align:center; grid-column:1/-1; padding:10px; font-size:12px; color:red">Ошибка загрузки</div>';
@@ -1670,10 +1671,10 @@
         function renderPhotoPreviewGrid() {
             const grid = document.getElementById('photoPreviewGrid');
             grid.innerHTML = selectedPhotosBase64.map((b64, index) => `
-                        < div class="photo-preview-item" >
+                        <div class="photo-preview-item">
                             <img src="${b64}">
-                                <button class="remove-photo" onclick="removePhoto(${index})">✕</button>
-                            </div>
+                            <button class="remove-photo" onclick="removePhoto(${index})">✕</button>
+                        </div>
                     `).join('');
         }
 
